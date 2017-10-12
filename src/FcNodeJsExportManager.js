@@ -15,8 +15,18 @@ class FcNodeJsExportManager extends EventEmitter {
     this.registerOnDataRecievedListener();
   }
 
+  static stringifyWithFunctions(object) {
+    return JSON.stringify(object, (key, val) => {
+      if (typeof val === 'function') {
+        return val.toString().replace(/\n/g, ' ');
+      }
+      return val;
+    });
+  }
+
+
   emitData(target, method, payload) {
-    const options = JSON.stringify(payload);
+    const options = FcNodeJsExportManager.stringifyWithFunctions(payload);
     const message = `${target}.${method}<=:=>${options}`;
     const buffer = Buffer.from(message, 'utf8');
     this.client.write(buffer);

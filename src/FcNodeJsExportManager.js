@@ -36,7 +36,7 @@ class FcNodeJsExportManager extends EventEmitter {
 
   registerOnDataRecievedListener() {
     this.client.on('data', (data) => {
-      this.outputData = data;
+      this.outputData = data.toString();
       if (!this.isError) {
         this.emit('exportDone', data.toString());
       }
@@ -56,7 +56,7 @@ class FcNodeJsExportManager extends EventEmitter {
           clearInterval(tmtId);
           resolve(this.outputData);
         }
-        if (TOTAL_ALLOWED_CYCLES == cyclesCount) {
+        if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
           const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
           reject(new Error(errorMsg));
           this.emit('error', errorMsg);

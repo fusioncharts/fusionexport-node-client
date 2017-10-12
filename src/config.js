@@ -1,0 +1,5 @@
+module.exports = {
+  host: '127.0.0.1',
+  port: '1337',
+  max_wait_sec: 180,
+};

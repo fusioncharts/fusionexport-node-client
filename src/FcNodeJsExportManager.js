@@ -64,7 +64,7 @@ class FcNodeJsExportManager extends EventEmitter {
         cyclesCount += 1;
         if (this.outputData) {
           clearInterval(tmtId);
-          resolve(this.outputData);
+          resolve(JSON.parse(this.outputData).data);
         }
         if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
           const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;

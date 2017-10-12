@@ -16,6 +16,10 @@ exportManager.export(options).then((data) => {
   logger.error(e);
 });
 
-exportManager.on('exportDone', (data) => {
-  logger.info(`From on exportDone event ${data}`);
-});
+// exportManager.on('exportDone', (data) => {
+//   logger.info(`From on exportDone event ${data}`);
+// });
+
+// exportManager.on('error', (err) => {
+//   logger.error(err);
+// });

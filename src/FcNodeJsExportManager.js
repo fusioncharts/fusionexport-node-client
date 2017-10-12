@@ -7,6 +7,7 @@ class FcNodeJsExportManager extends EventEmitter {
   constructor(options) {
     super();
     this.outputData = null;
+    this.isError = false;
     this.config = options ? Object.assign({}, config, options) : config;
     this.client = new net.Socket();
     this.connect();
@@ -36,7 +37,9 @@ class FcNodeJsExportManager extends EventEmitter {
   registerOnDataRecievedListener() {
     this.client.on('data', (data) => {
       this.outputData = data;
-      this.emit('exportDone', data.toString());
+      if (!this.isError) {
+        this.emit('exportDone', data.toString());
+      }
     });
   }
 
@@ -54,7 +57,10 @@ class FcNodeJsExportManager extends EventEmitter {
           resolve(this.outputData);
         }
         if (TOTAL_ALLOWED_CYCLES == cyclesCount) {
-          reject(new Error(`Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`));
+          const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
+          reject(new Error(errorMsg));
+          this.emit('error', errorMsg);
+          this.isError = true;
         }
       }, cycleStep);
     });

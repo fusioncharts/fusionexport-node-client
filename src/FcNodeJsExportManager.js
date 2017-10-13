@@ -1,4 +1,5 @@
 const net = require('net');
+const path = require('path');
 const config = require('./config.js');
 const logger = require('./logger');
 const { EventEmitter } = require('events');
@@ -26,7 +27,18 @@ class FcNodeJsExportManager extends EventEmitter {
 
 
   emitData(target, method, payload) {
-    const options = FcNodeJsExportManager.stringifyWithFunctions(payload);
+    const outload = payload;
+
+    if (outload.templateFilePath) {
+      outload.templateFilePath = path.resolve(outload.templateFilePath);
+    }
+
+    if (outload.inputSVG) {
+      outload.inputSVG = path.resolve(outload.inputSVG);
+    }
+
+    const options = FcNodeJsExportManager.stringifyWithFunctions(outload);
+
     const message = `${target}.${method}<=:=>${options}`;
     const buffer = Buffer.from(message, 'utf8');
     this.client.write(buffer);

@@ -11,7 +11,7 @@ const options = {
 };
 
 exportManager.export(options).then((data) => {
-  logger.info(`From then callback ${data}`);
+  logger.info(`From then callback ${JSON.stringify(data)}`);
 }).catch((e) => {
   logger.error(e);
 });

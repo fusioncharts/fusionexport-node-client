@@ -16,9 +16,9 @@ class FcNodeJsExportManager extends EventEmitter {
     this.registerOnDataRecievedListener();
   }
 
-  boot() {
-    this.emitData('ExportManager', 'boot', {});
-  }
+  // boot() {
+  //   this.emitData('ExportManager', 'boot', {});
+  // }
 
   static stringifyWithFunctions(object) {
     return JSON.stringify(object, (key, val) => {
@@ -92,9 +92,9 @@ class FcNodeJsExportManager extends EventEmitter {
     });
   }
 
-  dispose() {
-    this.emitData('ExportManager', 'dispose', {});
-  }
+  // dispose() {
+  //   this.emitData('ExportManager', 'dispose', {});
+  // }
 }
 
 module.exports = FcNodeJsExportManager;

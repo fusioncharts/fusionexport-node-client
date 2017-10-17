@@ -10,9 +10,12 @@ const options = {
   outputFileDefinition: {},
 };
 
+exportManager.boot();
 exportManager.export(options).then((data) => {
   logger.info(`From then callback ${JSON.stringify(data)}`);
+  exportManager.dispose();
 }).catch((e) => {
+  exportManager.dispose();
   logger.error(e);
 });
 

@@ -16,6 +16,10 @@ class FcNodeJsExportManager extends EventEmitter {
     this.registerOnDataRecievedListener();
   }
 
+  boot() {
+    this.emitData('ExportManager', 'boot', {});
+  }
+
   static stringifyWithFunctions(object) {
     return JSON.stringify(object, (key, val) => {
       if (typeof val === 'function') {
@@ -86,6 +90,10 @@ class FcNodeJsExportManager extends EventEmitter {
         }
       }, cycleStep);
     });
+  }
+
+  dispose() {
+    this.emitData('ExportManager', 'dispose', {});
   }
 }
 

@@ -2,7 +2,9 @@ const net = require('net');
 const path = require('path');
 const config = require('./config.js');
 const logger = require('./logger');
-const { EventEmitter } = require('events');
+const {
+  EventEmitter,
+} = require('events');
 
 class FcNodeJsExportManager extends EventEmitter {
   constructor(options) {
@@ -50,13 +52,26 @@ class FcNodeJsExportManager extends EventEmitter {
 
   connect() {
     this.client.connect(this.config.port, this.config.host, () => {
-      logger.info('connected with FcExportInterface');
+      logger.info('connected with ExportFusion Service');
+    });
+    this.registerOnErrorListener();
+  }
+
+  registerOnErrorListener() {
+    this.client.on('error', (e) => {
+      if (e.code === 'ECONNREFUSED') {
+        logger.error('unable to connect to ExportFusion Service. Please start the ExportFusion Service');
+      } else {
+        logger.error(e.message);
+      }
     });
   }
 
   registerOnEndListener() {
-    this.client.on('close', () => {
-      logger.info('connection closed');
+    this.client.on('close', (status) => {
+      if (!status) {
+        logger.info('disconnected with ExportFusion Service');
+      }
     });
   }
 

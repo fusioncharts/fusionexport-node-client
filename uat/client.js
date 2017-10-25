@@ -6,16 +6,12 @@ const exportManager = new FcNodeJsExportManager();
 const options = {
   chartConfig,
   type: 'jpeg',
-  exportFile: 'sandeep-<%= number(1) %>',
-  outputFileDefinition: {},
 };
 
-exportManager.boot();
+
 exportManager.export(options).then((data) => {
-  logger.info(`From then callback ${JSON.stringify(data)}`);
-  exportManager.dispose();
+  logger.info(`${JSON.stringify(data, null, 2)}`);
 }).catch((e) => {
-  exportManager.dispose();
   logger.error(e);
 });
 

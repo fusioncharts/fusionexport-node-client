@@ -52,7 +52,7 @@ class FcNodeJsExportManager extends EventEmitter {
 
   connect() {
     this.client.connect(this.config.port, this.config.host, () => {
-      logger.info('connected with ExportFusion Service');
+      logger.info('Connected with ExportFusion Service');
     });
     this.registerOnErrorListener();
   }
@@ -60,7 +60,7 @@ class FcNodeJsExportManager extends EventEmitter {
   registerOnErrorListener() {
     this.client.on('error', (e) => {
       if (e.code === 'ECONNREFUSED') {
-        logger.error('unable to connect to ExportFusion Service. Please start the ExportFusion Service');
+        logger.error('Unable to connect to ExportFusion Service!\nPlease make sure the ExportFusion Service is running before executing the command');
       } else {
         logger.error(e.message);
       }

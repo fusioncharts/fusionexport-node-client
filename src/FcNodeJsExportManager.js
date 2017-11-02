@@ -6,6 +6,8 @@ const {
   EventEmitter,
 } = require('events');
 
+const EXPORT_DATA = 'EXPORT_DATA:';
+
 class FcNodeJsExportManager extends EventEmitter {
   constructor(options) {
     super();
@@ -77,9 +79,12 @@ class FcNodeJsExportManager extends EventEmitter {
 
   registerOnDataRecievedListener() {
     this.client.on('data', (data) => {
-      this.outputData = data.toString();
-      if (!this.isError) {
-        this.emit('exportDone', data.toString());
+      const outputData = data.toString();
+      if (outputData.startsWith(EXPORT_DATA)) {
+        this.outputData = data.toString().substr(EXPORT_DATA.length);
+        if (!this.isError) {
+          this.emit('exportDone', this.outputData);
+        }
       }
     });
   }

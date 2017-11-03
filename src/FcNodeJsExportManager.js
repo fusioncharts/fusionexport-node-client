@@ -7,6 +7,8 @@ const {
 } = require('events');
 
 const EXPORT_DATA = 'EXPORT_DATA:';
+const EXPORT_EVENT = 'EXPORT_EVENT:';
+const UNIQUE_BORDER = ':8780dc3c41214695ae96b3432963d744:';
 
 class FcNodeJsExportManager extends EventEmitter {
   constructor(options) {
@@ -81,10 +83,20 @@ class FcNodeJsExportManager extends EventEmitter {
     this.client.on('data', (data) => {
       const outputData = data.toString();
       if (outputData.startsWith(EXPORT_DATA)) {
-        this.outputData = data.toString().substr(EXPORT_DATA.length);
+        this.outputData = outputData.substr(EXPORT_DATA.length);
         if (!this.isError) {
           this.emit('exportDone', this.outputData);
         }
+      }
+
+      if (outputData.startsWith(EXPORT_EVENT)) {
+        const msgs = outputData.split(UNIQUE_BORDER);
+        msgs.forEach((msg) => {
+          if (msg) {
+            const meta = JSON.parse(msg.substr(EXPORT_EVENT.length));
+            this.emit('exportStateChange', meta);
+          }
+        });
       }
     });
   }

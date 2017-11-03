@@ -82,23 +82,30 @@ class FcNodeJsExportManager extends EventEmitter {
   registerOnDataRecievedListener() {
     this.client.on('data', (data) => {
       const outputData = data.toString();
-      if (outputData.startsWith(EXPORT_DATA)) {
-        this.outputData = outputData.substr(EXPORT_DATA.length);
-        if (!this.isError) {
-          this.emit('exportDone', this.outputData);
-        }
-      }
-
-      if (outputData.startsWith(EXPORT_EVENT)) {
-        const msgs = outputData.split(UNIQUE_BORDER);
-        msgs.forEach((msg) => {
-          if (msg) {
+      const msgs = outputData.split(UNIQUE_BORDER);
+      msgs.forEach((msg) => {
+        if (msg) {
+          if (msg.startsWith(EXPORT_DATA)) {
+            if (!this.isError) {
+              this.outputData = msg.substr(EXPORT_DATA.length);
+              this.emit('exportDone', this.outputData);
+            }
+          }
+          if (msg.startsWith(EXPORT_EVENT)) {
             const meta = JSON.parse(msg.substr(EXPORT_EVENT.length));
             this.emit('exportStateChange', meta);
           }
-        });
-      }
+        }
+      });
     });
+  }
+
+  static parseExportdData(data) {
+    if (data.includes(UNIQUE_BORDER)) {
+      return JSON.parse(data.substr(data.indexOf(EXPORT_EVENT))).data;
+    }
+
+    return JSON.parse(data).data;
   }
 
   export(options) {
@@ -112,7 +119,8 @@ class FcNodeJsExportManager extends EventEmitter {
         cyclesCount += 1;
         if (this.outputData) {
           clearInterval(tmtId);
-          resolve(JSON.parse(this.outputData).data);
+          const outputFinalData = FcNodeJsExportManager.parseExportdData(this.outputData);
+          resolve(outputFinalData);
         }
         if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
           const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;

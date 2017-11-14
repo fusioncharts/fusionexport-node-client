@@ -43,6 +43,10 @@ class FcNodeJsExportManager extends EventEmitter {
       outload.templateFilePath = path.resolve(outload.templateFilePath);
     }
 
+    if (outload.callbackFilePath) {
+      outload.callbackFilePath = path.resolve(outload.callbackFilePath);
+    }
+
     if (outload.inputSVG) {
       outload.inputSVG = path.resolve(outload.inputSVG);
     }

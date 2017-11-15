@@ -60,7 +60,7 @@ class FcNodeJsExportManager extends EventEmitter {
 
   connect() {
     this.client.connect(this.config.port, this.config.host, () => {
-      logger.info('Connected with ExportFusion Service');
+      logger.info('Connected with FusionExport Service');
     });
     this.registerOnErrorListener();
   }
@@ -68,7 +68,7 @@ class FcNodeJsExportManager extends EventEmitter {
   registerOnErrorListener() {
     this.client.on('error', (e) => {
       if (e.code === 'ECONNREFUSED') {
-        logger.error('Unable to connect to ExportFusion Service!\nPlease make sure the ExportFusion Service is running before executing the command');
+        logger.error('Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command');
       } else {
         logger.error(e.message);
       }
@@ -78,7 +78,7 @@ class FcNodeJsExportManager extends EventEmitter {
   registerOnEndListener() {
     this.client.on('close', (status) => {
       if (!status) {
-        logger.info('disconnected with ExportFusion Service');
+        logger.info('disconnected with FusionExport Service');
       }
     });
   }

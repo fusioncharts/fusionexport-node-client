@@ -68,9 +68,10 @@ class FcNodeJsExportManager extends EventEmitter {
   registerOnErrorListener() {
     this.client.on('error', (e) => {
       if (e.code === 'ECONNREFUSED') {
-        logger.error('Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command');
+        const errorMsg = 'Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command';
+        this.emit('error', errorMsg);
       } else {
-        logger.error(e.message);
+        this.emit('error', e.message);
       }
     });
   }

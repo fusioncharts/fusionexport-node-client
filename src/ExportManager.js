@@ -47,7 +47,7 @@ class ExportManager extends EventEmitter {
       outload.inputSVG = path.resolve(outload.inputSVG);
     }
 
-    const options = FcNodeJsExportManager.stringifyWithFunctions(outload);
+    const options = ExportManager.stringifyWithFunctions(outload);
 
     const message = `${target}.${method}<=:=>${options}`;
     const buffer = Buffer.from(message, 'utf8');
@@ -120,7 +120,7 @@ class ExportManager extends EventEmitter {
         cyclesCount += 1;
         if (this.outputData) {
           clearInterval(tmtId);
-          const outputFinalData = FcNodeJsExportManager.parseExportdData(this.outputData);
+          const outputFinalData = ExportManager.parseExportdData(this.outputData);
           resolve(outputFinalData);
         }
         if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
@@ -134,4 +134,4 @@ class ExportManager extends EventEmitter {
   }
 }
 
-module.exports = FcNodeJsExportManager;
+module.exports = ExportManager;

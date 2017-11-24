@@ -1,0 +1,52 @@
+[{
+	"type": "column2d",
+	"renderAt": "chart-container",
+	"width": "550",
+	"height": "350",
+	"dataFormat": "json",
+	"dataSource": {
+		"chart": {
+			"caption": "First Chart",
+			"subCaption": "Bakersfield Central vs Los Angeles Topanga"
+		},
+		"data": [{
+				"label": "Mon",
+				"value": "15123"
+			},
+			{
+				"label": "Tue",
+				"value": "14233"
+			},
+			{
+				"label": "Wed",
+				"value": "25507"
+			}
+		]
+	}
+},{
+	"type": "column2d",
+	"renderAt": "chart-container",
+	"width": "550",
+	"height": "350",
+	"dataFormat": "json",
+	"dataSource": {
+		"chart": {
+			"caption": "Second Chart",
+			"subCaption": "Bakersfield Central vs Los Angeles Topanga"
+		},
+		"data": [{
+				"label": "Mon",
+				"value": "15123"
+			},
+			{
+				"label": "Tue",
+				"value": "14233"
+			},
+			{
+				"label": "Wed",
+				"value": "25507"
+			}
+		]
+	}
+}
+]

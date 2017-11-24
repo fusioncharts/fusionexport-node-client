@@ -2,12 +2,14 @@ const FusionExport = require('../');
 const fs = require('fs');
 const path = require('path');
 
-const chartConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'chart-config-file.json')).toString());
+const chartConent = fs.readFileSync(path.resolve(__dirname, 'dashboard_charts.json')).toString();
+const chartConfig = JSON.parse(chartConent);
 
 const fusion = new FusionExport();
 
 const exportConfig = {
   chartConfig,
+  templateFilePath: path.join(__dirname, 'template.html'),
 };
 
 fusion.export(exportConfig);

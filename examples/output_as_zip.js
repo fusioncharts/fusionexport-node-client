@@ -1,16 +1,22 @@
-const FusionExport = require('../');
 const fs = require('fs');
 const path = require('path');
 
-const chartConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'bulk.json')).toString());
+// require fusionexport
+const FusionExport = require('../');
 
-const fusion = new FusionExport();
+const chartConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'bulk.json')).toString());
+const host = '127.0.0.1';
+const port = 1337;
+
+// instantiate FusionExport
+const fusion = new FusionExport({ host, port });
 
 const exportConfig = {
   chartConfig,
   exportAsZip: 'true',
 };
 
+// provide the export config
 fusion.export(exportConfig);
 
 fusion.on('exportDone', (files) => {

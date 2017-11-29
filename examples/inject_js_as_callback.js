@@ -1,11 +1,16 @@
-const FusionExport = require('../');
 const fs = require('fs');
 const path = require('path');
 
+// require fusionexport
+const FusionExport = require('../');
+
 const chartConent = fs.readFileSync(path.resolve(__dirname, 'dashboard_charts.json')).toString();
 const chartConfig = JSON.parse(chartConent);
+const host = '127.0.0.1';
+const port = 1337;
 
-const fusion = new FusionExport();
+// instantiate FusionExport
+const fusion = new FusionExport({ host, port });
 
 const exportConfig = {
   chartConfig,

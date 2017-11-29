@@ -1,6 +1,8 @@
-const FusionExport = require('../');
 const fs = require('fs');
 const path = require('path');
+
+// require fusionexport
+const FusionExport = require('../');
 
 const chartConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'chart-config-file.json')).toString());
 
@@ -11,6 +13,7 @@ const exportConfig = {
   libraryDirectoryPath: path.join(__dirname, 'fusioncharts'),
 };
 
+// provide the export config
 fusion.export(exportConfig);
 
 fusion.on('exportDone', (files) => {

@@ -1,12 +1,27 @@
-const FusionExport = require('../');
-const path = require('path');
+# Installation
+To install the NodeJS module, simply use npm:
 
-const svg = path.resolve(__dirname, 'chart.svg');
+```bash
+$ npm install fusionexport --save
+```
+
+To require this into your project:
+
+```bash
+const FusionExport = require('fusionexport');
+```
+
+# Usage
+
+```js
+const FusionExport = require('../');
+
+const chartConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'chart-config-file.json')).toString());
 
 const fusion = new FusionExport();
 
 const exportConfig = {
-  inputSVG: svg,
+  chartConfig,
 };
 
 fusion.export(exportConfig);
@@ -23,3 +38,4 @@ fusion.on('exportStateChange', (state) => {
 fusion.on('error', (err) => {
   // catch error here
 });
+```

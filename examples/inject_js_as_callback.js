@@ -16,13 +16,14 @@ const exportConfig = {
 fusion.export(exportConfig);
 
 fusion.on('exportDone', (files) => {
-  console.log(files);
+  // files can be read from files array
+  // e.g. [{tmpPath:"", realName: ""}]
 });
 
 fusion.on('exportStateChange', (state) => {
-  console.log(state);
+  // called for export progress state change
 });
 
 fusion.on('error', (err) => {
-  console.error(err);
+  // catch error here
 });

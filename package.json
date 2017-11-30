@@ -19,5 +19,8 @@
   },
   "dependencies": {
     "winston": "^2.4.0"
-  }
+  },
+  "bundledDependencies": [
+    "winston"
+  ]
 }

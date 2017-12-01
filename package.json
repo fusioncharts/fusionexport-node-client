@@ -1,23 +1,35 @@
 {
   "name": "fusionexport-node-client",
   "version": "1.0.0-pre-alpha-1",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "NodeJS SDK for FusionExport. Enables exporting from FusionExport through NodeJS.",
+  "keywords": [
+    "fusionexport",
+    "fusioncharts",
+    "client",
+    "sdk",
+    "export"
+  ],
+  "homepage": "https://www.fusioncharts.com/fusionexport",
+  "license": "MIT",
+  "author": {
+    "name": "FusionCharts",
+    "email": "buy@fusioncharts.com",
+    "url": "https://www.fusioncharts.com"
   },
   "repository": {
     "type": "git",
     "url": "git+https://bitbucket.org/fusioncharts/fusionexport-node-client.git"
   },
-  "license": "ISC",
-  "homepage": "https://bitbucket.org/fusioncharts/fusionexport-node-client#readme",
+  "main": "index.js",
+  "dependencies": {
+    "winston": "^2.4.0"
+  },
   "devDependencies": {
     "eslint": "^4.8.0",
     "eslint-config-airbnb-base": "^12.0.2",
     "eslint-plugin-import": "^2.7.0"
   },
-  "dependencies": {
-    "winston": "^2.4.0"
-  }
+  "bundledDependencies": [
+    "winston"
+  ]
 }

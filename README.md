@@ -6,7 +6,7 @@ NodeJS SDK for FusionExport. Enables exporting from FusionExport through NodeJS.
 To install the NodeJS module, simply use npm:
 
 ```bash
-$ npm install fusionexport --save
+$ npm install fusionexport-node-client --save
 ```
 
 
@@ -15,7 +15,7 @@ $ npm install fusionexport --save
 To require the SDK into your project:
 
 ```js
-const FusionExport = require('fusionexport');
+const FusionExport = require('fusionexport-node-client');
 ```
 ## API Reference
 
@@ -28,7 +28,7 @@ const fs = require('fs');
 const path = require('path');
 
 // require fusionexport
-const FusionExport = require('fusionexport');
+const FusionExport = require('fusionexport-node-client');
 
 const chartConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'chart-config-file.json')).toString());
 const host = '127.0.0.1';

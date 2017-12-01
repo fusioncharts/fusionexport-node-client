@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://bitbucket.org/fusioncharts/fusionexport-node-client.git"
+    "url": "git+https://github.com/fusioncharts/fusionexport-node-client.git"
   },
   "main": "index.js",
   "dependencies": {

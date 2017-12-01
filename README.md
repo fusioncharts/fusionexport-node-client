@@ -17,7 +17,9 @@ To require the SDK into your project:
 ```js
 const FusionExport = require('fusionexport');
 ```
-## [API Reference](https://www.fusioncharts.com/dev/exporting-charts/using-fusionexport/sdk-api-reference/nodejs.html)
+## API Reference
+
+You can find the full reference [here](https://www.fusioncharts.com/dev/exporting-charts/using-fusionexport/sdk-api-reference/nodejs.html)
 
 ## Example
 Let’s start with a simple chart export. For exporting a single chart, save the chartConfig in a JSON file. The config should be inside an array.

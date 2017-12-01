@@ -1,1 +1,1 @@
-module.exports = require('./src/FcNodeJsExportManager');
+module.exports = require('./src/ExportManager');

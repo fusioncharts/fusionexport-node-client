@@ -1,0 +1,83 @@
+[{
+		"type": "pie2d",
+		"renderAt": "pie_chart",
+		"width": "500",
+		"height": "400",
+		"dataFormat": "json",
+		"dataSource": {
+			"chart": {
+				"caption": "Number of visitors last week",
+				"subCaption": "Bakersfield Central vs Los Angeles Topanga"
+			},
+			"categories": [{
+				"category": [{
+						"label": "Mon"
+					},
+					{
+						"label": "Tue"
+					},
+					{
+						"label": "Wed"
+					}
+				]
+			}],
+			"dataset": [{
+				"seriesname": "Los Angeles Topanga",
+				"data": [{
+						"value": "13400"
+					},
+					{
+						"value": "12800"
+					},
+					{
+						"value": "22800"
+					}
+				]
+			}]
+		}
+	},
+	{
+		"type": "mscolumn2d",
+		"renderAt": "column_chart",
+		"width": "450",
+		"height": "420",
+		"dataFormat": "json",
+		"dataSource": {
+			"chart": {
+				"caption": "Split of Sales by Product Category",
+				"subCaption": "In top 5 stores last month",
+				"yAxisname": "Sales (In USD)"
+			},
+			"categories": [{
+				"category": [{
+						"label": "Bakersfield Central"
+					},
+					{
+						"label": "Garden Groove harbour"
+					}
+				]
+			}],
+			"dataset": [{
+					"seriesname": "Food Products",
+					"data": [{
+							"value": "17000"
+						},
+						{
+							"value": "19500"
+						}
+					]
+				},
+				{
+					"seriesname": "Non-Food Products",
+					"data": [{
+							"value": "25400"
+						},
+						{
+							"value": "29800"
+						}
+					]
+				}
+			]
+		}
+	}
+]

@@ -2,9 +2,15 @@ const net = require('net');
 const path = require('path');
 const config = require('./config.js');
 const logger = require('./logger');
-const { EventEmitter } = require('events');
+const {
+  EventEmitter,
+} = require('events');
 
-class FcNodeJsExportManager extends EventEmitter {
+const EXPORT_DATA = 'EXPORT_DATA:';
+const EXPORT_EVENT = 'EXPORT_EVENT:';
+const UNIQUE_BORDER = ':8780dc3c41214695ae96b3432963d744:';
+
+class ExportManager extends EventEmitter {
   constructor(options) {
     super();
     this.outputData = null;
@@ -33,11 +39,15 @@ class FcNodeJsExportManager extends EventEmitter {
       outload.templateFilePath = path.resolve(outload.templateFilePath);
     }
 
+    if (outload.callbackFilePath) {
+      outload.callbackFilePath = path.resolve(outload.callbackFilePath);
+    }
+
     if (outload.inputSVG) {
       outload.inputSVG = path.resolve(outload.inputSVG);
     }
 
-    const options = FcNodeJsExportManager.stringifyWithFunctions(outload);
+    const options = ExportManager.stringifyWithFunctions(outload);
 
     const message = `${target}.${method}<=:=>${options}`;
     const buffer = Buffer.from(message, 'utf8');
@@ -46,23 +56,57 @@ class FcNodeJsExportManager extends EventEmitter {
 
   connect() {
     this.client.connect(this.config.port, this.config.host, () => {
-      logger.info('connected with FcExportInterface');
+      logger.info('Connected with FusionExport Service');
+    });
+    this.registerOnErrorListener();
+  }
+
+  registerOnErrorListener() {
+    this.client.on('error', (e) => {
+      if (e.code === 'ECONNREFUSED') {
+        const errorMsg = 'Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command';
+        this.emit('error', errorMsg);
+      } else {
+        this.emit('error', e.message);
+      }
     });
   }
 
   registerOnEndListener() {
-    this.client.on('close', () => {
-      logger.info('connection closed');
+    this.client.on('close', (status) => {
+      if (!status) {
+        logger.info('disconnected with FusionExport Service');
+      }
     });
   }
 
   registerOnDataRecievedListener() {
     this.client.on('data', (data) => {
-      this.outputData = data.toString();
-      if (!this.isError) {
-        this.emit('exportDone', data.toString());
-      }
+      const outputData = data.toString();
+      const msgs = outputData.split(UNIQUE_BORDER);
+      msgs.forEach((msg) => {
+        if (msg) {
+          if (msg.startsWith(EXPORT_DATA)) {
+            if (!this.isError) {
+              this.outputData = msg.substr(EXPORT_DATA.length);
+              this.emit('exportDone', this.outputData);
+            }
+          }
+          if (msg.startsWith(EXPORT_EVENT)) {
+            const meta = JSON.parse(msg.substr(EXPORT_EVENT.length));
+            this.emit('exportStateChange', meta);
+          }
+        }
+      });
     });
+  }
+
+  static parseExportdData(data) {
+    if (data.includes(UNIQUE_BORDER)) {
+      return JSON.parse(data.substr(data.indexOf(EXPORT_EVENT))).data;
+    }
+
+    return JSON.parse(data).data;
   }
 
   export(options) {
@@ -76,7 +120,8 @@ class FcNodeJsExportManager extends EventEmitter {
         cyclesCount += 1;
         if (this.outputData) {
           clearInterval(tmtId);
-          resolve(JSON.parse(this.outputData).data);
+          const outputFinalData = ExportManager.parseExportdData(this.outputData);
+          resolve(outputFinalData);
         }
         if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
           const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
@@ -89,4 +134,4 @@ class FcNodeJsExportManager extends EventEmitter {
   }
 }
 
-module.exports = FcNodeJsExportManager;
+module.exports = ExportManager;

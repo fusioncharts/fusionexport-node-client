@@ -1,5 +1,7 @@
 const net = require('net');
 const path = require('path');
+const WebSocket = require('ws');
+
 const config = require('./config.js');
 const logger = require('./logger');
 const {
@@ -16,10 +18,7 @@ class ExportManager extends EventEmitter {
     this.outputData = null;
     this.isError = false;
     this.config = options ? Object.assign({}, config, options) : config;
-    this.client = new net.Socket();
-    this.connect();
-    this.registerOnEndListener();
-    this.registerOnDataRecievedListener();
+    this.client = null;
   }
 
   static stringifyWithFunctions(object) {
@@ -51,14 +50,24 @@ class ExportManager extends EventEmitter {
 
     const message = `${target}.${method}<=:=>${options}`;
     const buffer = Buffer.from(message, 'utf8');
-    this.client.write(buffer);
+    this.client.send(buffer, (err) => {
+      if (err) {
+        this.emit('error', err);
+      }
+    });
   }
 
   connect() {
-    this.client.connect(this.config.port, this.config.host, () => {
-      logger.info('Connected with FusionExport Service');
+    return new Promise((resolve) => {
+      this.client = new WebSocket(this.config.url);
+      this.registerOnErrorListener();
+      this.registerOnEndListener();
+      this.registerOnDataRecievedListener();
+      this.client.on('open', () => {
+        logger.info('Connected with FusionExport Service');
+        resolve();
+      });
     });
-    this.registerOnErrorListener();
   }
 
   registerOnErrorListener() {
@@ -81,7 +90,7 @@ class ExportManager extends EventEmitter {
   }
 
   registerOnDataRecievedListener() {
-    this.client.on('data', (data) => {
+    this.client.on('message', (data) => {
       const outputData = data.toString();
       const msgs = outputData.split(UNIQUE_BORDER);
       msgs.forEach((msg) => {
@@ -89,7 +98,7 @@ class ExportManager extends EventEmitter {
           if (msg.startsWith(EXPORT_DATA)) {
             if (!this.isError) {
               this.outputData = msg.substr(EXPORT_DATA.length);
-              this.emit('exportDone', this.outputData);
+              this.emit('exportDone', ExportManager.parseExportdData(this.outputData));
             }
           }
           if (msg.startsWith(EXPORT_EVENT)) {
@@ -103,33 +112,35 @@ class ExportManager extends EventEmitter {
 
   static parseExportdData(data) {
     if (data.includes(UNIQUE_BORDER)) {
-      return JSON.parse(data.substr(data.indexOf(EXPORT_EVENT))).data;
+      return JSON.parse(data.substr(data.indexOf(EXPORT_EVENT)));
     }
 
-    return JSON.parse(data).data;
+    return JSON.parse(data);
   }
 
   export(options) {
-    this.emitData('ExportManager', 'export', options);
-    return new Promise((resolve, reject) => {
-      let cyclesCount = 0;
-      const cycleStep = 10;
-      const MAX_WAIT_TIME = this.config.max_wait_sec * 1000;
-      const TOTAL_ALLOWED_CYCLES = MAX_WAIT_TIME / cycleStep;
-      const tmtId = setInterval(() => {
-        cyclesCount += 1;
-        if (this.outputData) {
-          clearInterval(tmtId);
-          const outputFinalData = ExportManager.parseExportdData(this.outputData);
-          resolve(outputFinalData);
-        }
-        if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
-          const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
-          reject(new Error(errorMsg));
-          this.emit('error', errorMsg);
-          this.isError = true;
-        }
-      }, cycleStep);
+    this.connect().then(() => {
+      this.emitData('ExportManager', 'export', options);
+      return new Promise((resolve, reject) => {
+        let cyclesCount = 0;
+        const cycleStep = 10;
+        const MAX_WAIT_TIME = this.config.max_wait_sec * 1000;
+        const TOTAL_ALLOWED_CYCLES = MAX_WAIT_TIME / cycleStep;
+        const tmtId = setInterval(() => {
+          cyclesCount += 1;
+          if (this.outputData) {
+            clearInterval(tmtId);
+            const outputFinalData = ExportManager.parseExportdData(this.outputData);
+            resolve(outputFinalData);
+          }
+          if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
+            const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
+            reject(new Error(errorMsg));
+            this.emit('error', errorMsg);
+            this.isError = true;
+          }
+        }, cycleStep);
+      });
     });
   }
 }

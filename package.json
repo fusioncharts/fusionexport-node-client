@@ -22,7 +22,8 @@
   },
   "main": "index.js",
   "dependencies": {
-    "winston": "^2.4.0"
+    "winston": "^2.4.0",
+    "ws": "^3.3.3"
   },
   "devDependencies": {
     "eslint": "^4.8.0",

@@ -5,8 +5,6 @@ const jsdom = require('jsdom');
 const tmp = require('tmp');
 const JSZip = require('node-zip');
 
-
-
 const { stringifyWithFunctions } = require('./utils');
 
 class ExportConfig {
@@ -21,6 +19,7 @@ class ExportConfig {
     }
     if (name) {
       switch (name) {
+        case 'outputFileDefinition':
         case 'resourceFilePath':
           try {
             let resourceJSON;
@@ -36,7 +35,6 @@ class ExportConfig {
           break;
         default:
           this.configs.set(name, value);
-
       }
     }
     return this;
@@ -79,7 +77,7 @@ class ExportConfig {
   populateConfigsObj() {
     this.configsObj = {};
     this.configsObj = Array.from(this.configs).reduce((obj, [name, value]) => {
-      const modValue = ExportConfig.getFormattedConfigValue(name, value);
+      const modValue = this.getFormattedConfigValue(name, value);
       return Object.assign(this.configsObj, { [name]: modValue });
     }, {});
     this.configsObj.clientName = 'NODE';
@@ -99,7 +97,8 @@ class ExportConfig {
     return Buffer.from(fs.readFileSync(filePath)).toString('base64');
   }
 
-  static getFormattedConfigValue(name, value) {
+  getFormattedConfigValue(name, value) {
+    let fileContent;
     switch (name) {
       case 'chartConfig':
         return value;
@@ -109,6 +108,12 @@ class ExportConfig {
       case 'templateFilePath':
         return this.getZippedTemplate();
       case 'outputFileDefinition':
+        if (typeof value === 'object') {
+          fileContent = `module.exports = ${stringifyWithFunctions(value)}`;
+        } else {
+          fileContent = fs.readFileSync(path.resolve(value));
+        }
+        return Buffer.from(fileContent).toString('base64');
       case 'dashboardLogo':
       case 'callbackFilePath':
       case 'inputSVG':
@@ -123,7 +128,7 @@ class ExportConfig {
     this.generateResourceData();
     this.reReferenceTemplateUrls();
     const zipFile = this.generateZip();
-    return ExportConfig.covertToBase64String(path.resolve(zipFile));
+    return ExportConfig.covertToBase64String(path.resolve(zipFile.name));
   }
 
   findResources() {

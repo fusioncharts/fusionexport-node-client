@@ -92,7 +92,7 @@ class ExportManager extends EventEmitter {
 
   export(exportConfig) {
     if (!(exportConfig instanceof ExportConfig)) {
-      this.emit('error', 'Not an instance of ExportConfig class');
+      this.emit('error', new Error('Not an instance of ExportConfig class'));
       return;
     }
     this.connect().then(() => {

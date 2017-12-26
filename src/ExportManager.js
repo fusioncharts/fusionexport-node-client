@@ -91,13 +91,14 @@ class ExportManager extends EventEmitter {
   }
 
   export(exportConfig) {
-    if (!(exportConfig instanceof ExportConfig)) {
-      this.emit('error', new Error('Not an instance of ExportConfig class'));
-      return;
-    }
-    this.connect().then(() => {
-      this.emitData('ExportManager', 'export', exportConfig);
-      return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
+      if (!(exportConfig instanceof ExportConfig)) {
+        const err = new Error('Not an instance of ExportConfig class');
+        this.emit('error', err);
+        reject(err);
+      }
+      this.connect().then(() => {
+        this.emitData('ExportManager', 'export', exportConfig);
         let cyclesCount = 0;
         const cycleStep = 10;
         const MAX_WAIT_TIME = this.config.max_wait_sec * 1000;

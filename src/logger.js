@@ -9,7 +9,7 @@ const logger = new (winston.Logger)({
     new (winston.transports.Console)({
       level: 'error',
     }),
-    new (winston.transports.File)({ filename: path.join(HOME_DIR, 'fusionexport_service_logger.log') }),
+    new (winston.transports.File)({ filename: path.join(HOME_DIR, 'fusionexport_node_client.log') }),
   ],
 });
 

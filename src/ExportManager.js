@@ -1,12 +1,9 @@
-const net = require('net');
-const path = require('path');
 const WebSocket = require('ws');
+const { EventEmitter } = require('events');
 
+const ExportConfig = require('./ExportConfig');
 const config = require('./config.js');
 const logger = require('./logger');
-const {
-  EventEmitter,
-} = require('events');
 
 const EXPORT_DATA = 'EXPORT_DATA:';
 const EXPORT_EVENT = 'EXPORT_EVENT:';
@@ -21,33 +18,8 @@ class ExportManager extends EventEmitter {
     this.client = null;
   }
 
-  static stringifyWithFunctions(object) {
-    return JSON.stringify(object, (key, val) => {
-      if (typeof val === 'function') {
-        return val.toString().replace(/\n/g, ' ');
-      }
-      return val;
-    });
-  }
-
-
-  emitData(target, method, payload) {
-    const outload = payload;
-
-    if (outload.templateFilePath) {
-      outload.templateFilePath = path.resolve(outload.templateFilePath);
-    }
-
-    if (outload.callbackFilePath) {
-      outload.callbackFilePath = path.resolve(outload.callbackFilePath);
-    }
-
-    if (outload.inputSVG) {
-      outload.inputSVG = path.resolve(outload.inputSVG);
-    }
-
-    const options = ExportManager.stringifyWithFunctions(outload);
-
+  emitData(target, method, exportConfig) {
+    const options = exportConfig.getFormattedConfigs();
     const message = `${target}.${method}<=:=>${options}`;
     const buffer = Buffer.from(message, 'utf8');
     this.client.send(buffer, (err) => {
@@ -118,9 +90,13 @@ class ExportManager extends EventEmitter {
     return JSON.parse(data);
   }
 
-  export(options) {
+  export(exportConfig) {
+    if (!(exportConfig instanceof ExportConfig)) {
+      this.emit('error', 'Not an instance of ExportConfig class');
+      return;
+    }
     this.connect().then(() => {
-      this.emitData('ExportManager', 'export', options);
+      this.emitData('ExportManager', 'export', exportConfig);
       return new Promise((resolve, reject) => {
         let cyclesCount = 0;
         const cycleStep = 10;

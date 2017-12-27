@@ -104,7 +104,7 @@ class ExportConfig {
         return value;
       case 'asyncCapture':
       case 'exportAsZip':
-        return value === 'true';
+        return value === true || value === 'true';
       case 'templateFilePath':
         return this.getZippedTemplate();
       case 'outputFileDefinition':

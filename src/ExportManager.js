@@ -15,6 +15,7 @@ class ExportManager extends EventEmitter {
     this.outputData = null;
     this.isError = false;
     this.config = options ? Object.assign({}, config, options) : config;
+    this.config.url = `ws://${this.config.host}:${this.config.port}`;
     this.client = null;
   }
 
@@ -30,15 +31,26 @@ class ExportManager extends EventEmitter {
   }
 
   connect() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      let rejectionId;
       this.client = new WebSocket(this.config.url);
       this.registerOnErrorListener();
       this.registerOnEndListener();
       this.registerOnDataRecievedListener();
-      this.client.on('open', () => {
+
+      const onOpenListener = () => {
         logger.info('Connected with FusionExport Service');
+        clearTimeout(rejectionId);
         resolve();
-      });
+      };
+
+      rejectionId = setTimeout(() => {
+        const errorMsg = 'Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command';
+        reject(new Error(errorMsg));
+        this.client.removeEventListener('open', onOpenListener);
+      }, 2000);
+
+      this.client.on('open', onOpenListener);
     });
   }
 
@@ -117,6 +129,8 @@ class ExportManager extends EventEmitter {
             this.isError = true;
           }
         }, cycleStep);
+      }).catch((err) => {
+        this.emit('error', err.toString());
       });
     });
   }

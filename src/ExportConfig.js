@@ -111,13 +111,13 @@ class ExportConfig {
         if (typeof value === 'object') {
           fileContent = `module.exports = ${stringifyWithFunctions(value)}`;
         } else {
-          fileContent = fs.readFileSync(path.resolve(value));
+          fileContent = fs.readFileSync(value);
         }
         return Buffer.from(fileContent).toString('base64');
       case 'dashboardLogo':
       case 'callbackFilePath':
       case 'inputSVG':
-        return ExportConfig.covertToBase64String(path.resolve(value));
+        return ExportConfig.covertToBase64String(value);
       default:
         return value;
     }
@@ -155,10 +155,13 @@ class ExportConfig {
       return;
     }
 
+    const resourcesData = this.get('resourceFilePath');
+
     Object.keys(resources).forEach((key) => {
-      this.options.resources[key] =
-        _.uniq(resources[key].concat(this.options.resources[key] || []));
+      resourcesData[key] =
+        _.uniq(resources[key].concat(resourcesData[key] || []));
     });
+    this.set('resourceFilePath', resourcesData);
   }
 
   generateResourceData() {

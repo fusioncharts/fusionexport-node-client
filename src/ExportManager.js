@@ -1,5 +1,7 @@
 const WebSocket = require('ws');
 const { EventEmitter } = require('events');
+const fs = require('fs-extra');
+const path = require('path');
 
 const ExportConfig = require('./ExportConfig');
 const config = require('./config.js');
@@ -132,6 +134,18 @@ class ExportManager extends EventEmitter {
       }).catch((err) => {
         this.emit('error', err.toString());
       });
+    });
+  }
+
+  static saveExportedFiles(dirName, files) {
+    if (!files) {
+      throw new Error('Exported files are missing');
+    }
+    fs.ensureDirSync(dirName);
+    files.data.forEach((item) => {
+      const filePath = path.join(dirName, item.realName);
+      const data = Buffer.from(item.fileContent, 'base64');
+      fs.outputFileSync(filePath, data);
     });
   }
 }

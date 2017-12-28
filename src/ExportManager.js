@@ -137,16 +137,24 @@ class ExportManager extends EventEmitter {
     });
   }
 
-  static saveExportedFiles(dirName, files) {
-    if (!files) {
-      throw new Error('Exported files are missing');
+  static saveExportedFiles(dirPath, exportedOutput) {
+    if (!exportedOutput) {
+      throw new Error('Exported Output files are missing');
     }
-    fs.ensureDirSync(dirName);
-    files.data.forEach((item) => {
-      const filePath = path.join(dirName, item.realName);
+    fs.ensureDirSync(dirPath);
+    exportedOutput.data.forEach((item) => {
+      const filePath = path.join(dirPath, item.realName);
       const data = Buffer.from(item.fileContent, 'base64');
       fs.outputFileSync(filePath, data);
     });
+  }
+
+  static getExportedFileNames(exportedOutput) {
+    if (!exportedOutput) {
+      throw new Error('Exported Output files are missing');
+    }
+    const fileNames = exportedOutput.data.map(item => item.realName);
+    return fileNames;
   }
 }
 

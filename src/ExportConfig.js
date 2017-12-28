@@ -25,7 +25,7 @@ class ExportConfig {
             let resourceJSON;
             if (typeof value === 'string') {
               resourceJSON = JSON.parse(fs.readFileSync(path.resolve(value)));
-            } else if (typeof value === 'object') {
+            } else if (value && typeof value === 'object') {
               resourceJSON = _.clone(value);
             }
             this.configs.set(name, resourceJSON);
@@ -33,6 +33,8 @@ class ExportConfig {
             throw new Error(`Not a valid json ${e}`);
           }
           break;
+        case 'libraryDirectoryPath':
+          throw new Error('libraryDirectoryPath can not be configured from the SDK');
         default:
           this.configs.set(name, value);
       }
@@ -108,7 +110,7 @@ class ExportConfig {
       case 'templateFilePath':
         return this.getZippedTemplate();
       case 'outputFileDefinition':
-        if (typeof value === 'object') {
+        if (value && typeof value === 'object') {
           fileContent = `module.exports = ${stringifyWithFunctions(value)}`;
         } else {
           fileContent = fs.readFileSync(value);

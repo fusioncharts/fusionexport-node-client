@@ -9,7 +9,7 @@ const logger = require('./logger');
 
 const EXPORT_DATA = 'EXPORT_DATA:';
 const EXPORT_EVENT = 'EXPORT_EVENT:';
-const UNIQUE_BORDER = ':8780dc3c41214695ae96b3432963d744:';
+
 
 class ExportManager extends EventEmitter {
   constructor(options) {
@@ -78,29 +78,22 @@ class ExportManager extends EventEmitter {
   registerOnDataRecievedListener() {
     this.client.on('message', (data) => {
       const outputData = data.toString();
-      const msgs = outputData.split(UNIQUE_BORDER);
-      msgs.forEach((msg) => {
-        if (msg) {
-          if (msg.startsWith(EXPORT_DATA)) {
-            if (!this.isError) {
-              this.outputData = msg.substr(EXPORT_DATA.length);
-              this.emit('exportDone', ExportManager.parseExportdData(this.outputData));
-            }
-          }
-          if (msg.startsWith(EXPORT_EVENT)) {
-            const meta = JSON.parse(msg.substr(EXPORT_EVENT.length));
-            this.emit('exportStateChange', meta);
+      if (outputData) {
+        if (outputData.startsWith(EXPORT_DATA)) {
+          if (!this.isError) {
+            this.outputData = outputData.substr(EXPORT_DATA.length);
+            this.emit('exportDone', ExportManager.parseExportdData(this.outputData));
           }
         }
-      });
+        if (outputData.startsWith(EXPORT_EVENT)) {
+          const meta = JSON.parse(outputData.substr(EXPORT_EVENT.length));
+          this.emit('exportStateChange', meta);
+        }
+      }
     });
   }
 
   static parseExportdData(data) {
-    if (data.includes(UNIQUE_BORDER)) {
-      return JSON.parse(data.substr(data.indexOf(EXPORT_EVENT)));
-    }
-
     return JSON.parse(data);
   }
 

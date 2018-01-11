@@ -7,39 +7,104 @@ const JSZip = require('node-zip');
 
 const { stringifyWithFunctions } = require('./utils');
 
+const metadataFolderPath = path.join(__dirname, './metadata');
+const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
+const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
+
+const mapMetadataTypeNameToJSValue = {
+  string: '',
+  boolean: true,
+  number: 1,
+};
+
+function booleanConverter(value) {
+  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+    const stringValue = value.toLowerCase();
+    if (stringValue == 'true') {
+      return true;
+    } else if (stringValue == 'false') {
+      return false;
+    }
+    throw Error("Couldn't convert to boolean");
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+    const numberValue = value;
+    if (numberValue == 1) {
+      return true;
+    } else if (numberValue == 0) {
+      return false;
+    }
+    throw Error("Couldn't convert to boolean");
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.boolean) {
+    return value;
+  }
+
+  throw Error("Couldn't convert to boolean");
+}
+
+function numberConverter(value) {
+  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+    const stringValue = value;
+    const numberValue = Number(stringValue);
+
+    if (!Number.isNaN(numberValue)) {
+      return numberValue;
+    }
+    throw Error("Couldn't convert to number");
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+    const numberValue = value;
+    return numberValue;
+  }
+
+  throw Error("Couldn't convert to number");
+}
+
+const mapConverterNameToConverter = {
+  BooleanConverter: booleanConverter,
+  NumberConverter: numberConverter,
+};
+
+
 class ExportConfig {
   constructor() {
     this.configs = new Map();
     this.configsObj = {};
+
+    this.metadata = JSON.parse(fs.readFileSync(metadataFilePath));
+    this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
   }
 
   set(name, value) {
+    const configName = name;
+    let configValue = value;
     if (typeof name !== 'string') {
       throw new Error('Only strings are allowed as a key name');
     }
-    if (name) {
-      switch (name) {
-        case 'outputFileDefinition':
-        case 'resourceFilePath':
-          try {
-            let resourceJSON;
-            if (typeof value === 'string') {
-              resourceJSON = JSON.parse(fs.readFileSync(path.resolve(value)));
-            } else if (value && typeof value === 'object') {
-              resourceJSON = _.clone(value);
-            }
-            this.configs.set(name, resourceJSON);
-          } catch (e) {
-            throw new Error(`Not a valid json ${e}`);
-          }
-          break;
-        case 'libraryDirectoryPath':
-          throw new Error('libraryDirectoryPath can not be configured from the SDK');
-        default:
-          this.configs.set(name, value);
-      }
-    }
+
+    configValue = this.tryConvertType(configName, configValue);
+    this.checkTypings(configName, configValue);
+    this.configs.set(configName, configValue);
+
     return this;
+  }
+
+  tryConvertType(configName, configValue) {
+    const reqdTyping = this.typings[configName];
+    const converterName = reqdTyping.converter.toLowerCase();
+    const converterFunction = mapConverterNameToConverter[converterName];
+
+    if (converterFunction !== undefined) {
+      return converterFunction(configValue);
+    }
+    return configValue;
+  }
+
+  checkTypings(configName, configValue) {
+    const reqdTyping = this.typings[configName];
+    const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping];
+
+    if (typeof configValue !== typeof valueOfType) {
+      throw new Error(`${configName} of type ${typeof configValue} is not allowed`);
+    }
   }
 
   get(name) {

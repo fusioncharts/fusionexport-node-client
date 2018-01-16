@@ -4,8 +4,19 @@ const _ = require('lodash');
 const jsdom = require('jsdom');
 const tmp = require('tmp');
 const JSZip = require('node-zip');
+const glob = require('glob');
 
-const { stringifyWithFunctions } = require('./utils');
+const {
+  stringifyWithFunctions,
+  getTempFolderName,
+  getTempFileName,
+  getCommonAncestorDirectory,
+  getRelativePathFrom,
+  isWithinPath,
+  isLocalResource,
+  readFileContent,
+  diffArrays,
+} = require('./utils');
 
 const metadataFolderPath = path.join(__dirname, './metadata');
 const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
@@ -20,17 +31,17 @@ const mapMetadataTypeNameToJSValue = {
 function booleanConverter(value) {
   if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
     const stringValue = value.toLowerCase();
-    if (stringValue == 'true') {
+    if (stringValue === 'true') {
       return true;
-    } else if (stringValue == 'false') {
+    } else if (stringValue === 'false') {
       return false;
     }
     throw Error("Couldn't convert to boolean");
   } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
     const numberValue = value;
-    if (numberValue == 1) {
+    if (numberValue === 1) {
       return true;
-    } else if (numberValue == 0) {
+    } else if (numberValue === 0) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
@@ -63,12 +74,19 @@ const mapConverterNameToConverter = {
   NumberConverter: numberConverter,
 };
 
+const CHARTCONFIG = 'chartConfig';
+const INPUTSVG = 'inputSVG';
+const CALLBACKS = 'callbackFilePath';
+const DASHBOARDLOGO = 'dashboardlogo';
+const OUTPUTFILEDEFINITION = 'outputFileDefinition';
+const CLIENTNAME = 'clientName';
+const TEMPLATE = 'templateFilePath';
+const RESOURCES = 'resourceFilePath';
+
 
 class ExportConfig {
   constructor() {
     this.configs = new Map();
-    this.configsObj = {};
-
     this.metadata = JSON.parse(fs.readFileSync(metadataFilePath));
     this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
   }
@@ -141,213 +159,172 @@ class ExportConfig {
     return new Map(this.configs);
   }
 
-  populateConfigsObj() {
-    this.configsObj = {};
-    this.configsObj = Array.from(this.configs).reduce((obj, [name, value]) => {
-      const modValue = this.getFormattedConfigValue(name, value);
-      return Object.assign(this.configsObj, { [name]: modValue });
-    }, {});
-    this.configsObj.clientName = 'NODE';
+  toJSON() {
+    const selfObj = this.toObject();
+    return JSON.stringify(selfObj);
   }
 
-  getCofnigsObj() {
-    this.populateConfigsObj();
-    return this.configsObj;
+  toObject(strMap) {
+    const obj = Object.create(null);
+    for (const [k, v] of strMap) {
+      // We don’t escape the key '__proto__'
+      // which can cause problems on older engines
+      obj[k] = v;
+    }
+    return obj;
+  }
+
+  cloneWithProcessedProperties() {
+    const clonedObj = this.toObject();
+
+    clonedObj.clientName = 'NODE';
+
+    if (clonedObj.has(CHARTCONFIG)) {
+      const oldValue = clonedObj.get(CHARTCONFIG);
+      clonedObj.remove(CHARTCONFIG);
+
+      clonedObj.Set(CHARTCONFIG, readFileContent(oldValue, false));
+    }
+
+    if (clonedObj.has(INPUTSVG)) {
+      const oldValue = clonedObj.get(INPUTSVG);
+      clonedObj.remove(INPUTSVG);
+
+      clonedObj.Set(INPUTSVG, readFileContent(oldValue, true));
+    }
+
+    if (clonedObj.has(CALLBACKS)) {
+      const oldValue = clonedObj.get(CALLBACKS);
+      clonedObj.remove(CALLBACKS);
+
+      clonedObj.Set(CALLBACKS, readFileContent(oldValue, true));
+    }
+
+    if (clonedObj.has(DASHBOARDLOGO)) {
+      const oldValue = clonedObj.get(DASHBOARDLOGO);
+      clonedObj.remove(DASHBOARDLOGO);
+
+      clonedObj.Set(DASHBOARDLOGO, readFileContent(oldValue, true));
+    }
+
+    if (clonedObj.has(OUTPUTFILEDEFINITION)) {
+      const oldValue = clonedObj.get(OUTPUTFILEDEFINITION);
+      clonedObj.remove(OUTPUTFILEDEFINITION);
+
+      clonedObj.Set(OUTPUTFILEDEFINITION, readFileContent(oldValue, false));
+    }
+
+    const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
+    clonedObj.Set(RESOURCES, contentZipbase64);
+    clonedObj.Set(TEMPLATE, templateFilePathWithinZip);
   }
 
   getFormattedConfigs() {
-    this.populateConfigsObj();
-    return stringifyWithFunctions(this.configsObj);
+    const processedObj = this.cloneWithProcessedProperties();
+    return stringifyWithFunctions(processedObj);
   }
 
-  static covertToBase64String(filePath) {
-    return Buffer.from(fs.readFileSync(filePath)).toString('base64');
-  }
+  createBase64ZippedTemplate() {
+    const listExtractedPaths = this.findResources();
+    let { baseDirectoryPath, listResourcePaths } = this.resolveResourceGlobFiles();
+    const templateFilePath = this.get(TEMPLATE);
 
-  getFormattedConfigValue(name, value) {
-    let fileContent;
-    switch (name) {
-      case 'chartConfig':
-        return value;
-      case 'asyncCapture':
-      case 'exportAsZip':
-        return value === true || value === 'true';
-      case 'templateFilePath':
-        return this.getZippedTemplate();
-      case 'outputFileDefinition':
-        if (value && typeof value === 'object') {
-          fileContent = `module.exports = ${stringifyWithFunctions(value)}`;
-        } else {
-          fileContent = fs.readFileSync(value);
-        }
-        return Buffer.from(fileContent).toString('base64');
-      case 'dashboardLogo':
-      case 'callbackFilePath':
-      case 'inputSVG':
-        return ExportConfig.covertToBase64String(value);
-      default:
-        return value;
+    // If basepath is not provided, find it
+    // from common ancestor directory of extracted file paths plus template
+    if (baseDirectoryPath === undefined) {
+      const listExtractedPathsPlusTemplate = [];
+      listExtractedPathsPlusTemplate.push.apply(listExtractedPaths);
+      listExtractedPathsPlusTemplate.push(templateFilePath);
+
+      const commonDirectoryPath = getCommonAncestorDirectory(listExtractedPathsPlusTemplate);
+
+      baseDirectoryPath = commonDirectoryPath;
     }
-  }
 
-  getZippedTemplate() {
-    this.findResources();
-    this.generateResourceData();
-    this.reReferenceTemplateUrls();
-    const zipFile = this.generateZip();
-    return ExportConfig.covertToBase64String(path.resolve(zipFile.name));
+    // Filter listResourcePaths to those only which are within basePath
+    listResourcePaths = listResourcePaths
+      .filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
+
+    const zipFile = ExportConfig.generateZip([
+      ...listExtractedPaths, ...listResourcePaths, templateFilePath], baseDirectoryPath);
+
+    return {
+      contentZipbase64: readFileContent(path.resolve(zipFile.name), true),
+      templatePathWithinZip: getRelativePathFrom(templateFilePath, baseDirectoryPath),
+    };
   }
 
   findResources() {
-    const html = fs.readFileSync(path.resolve(this.get('templateFilePath'))).toString();
+    const html = fs.readFileSync(path.resolve(this.get(TEMPLATE))).toString();
     const { JSDOM } = jsdom;
     const { window: { document } } = new JSDOM(html);
 
-    let links = [...document.querySelectorAll('link')];
-    let scripts = [...document.querySelectorAll('script')];
-    let imgs = [...document.querySelectorAll('img')];
+    const links = [...document.querySelectorAll('link')];
+    const scripts = [...document.querySelectorAll('script')];
+    const imgs = [...document.querySelectorAll('img')];
 
-    links = links.map(link => link.href);
-    scripts = scripts.map(script => script.src);
-    imgs = imgs.map(img => img.src);
+    const linkURLs = links.map(link => path.resolve(link.href)).filter(isLocalResource);
+    const scriptURLs = scripts.map(script => path.resolve(script.src)).filter(isLocalResource);
+    const imgURLs = imgs.map(img => path.resolve(img.src)).filter(isLocalResource);
 
-    const resources = {
-      images: imgs,
-      stylesheets: links,
-      javascripts: scripts,
+    return [...linkURLs, ...scriptURLs, ...imgURLs];
+  }
+
+  resolveResourceGlobFiles() {
+    let baseDirectoryPath;
+    let listResourcePaths = [];
+
+    if (!this.has('resourceFilePath')) {
+      return {
+        baseDirectoryPath,
+        listResourcePaths,
+      };
+    }
+
+    const resourceFilePath = _.clone(this.get('resourceFilePath'));
+    const resourceDirectoryPath = path.dirname(resourceFilePath);
+
+    // Load resourceFilePath content (JSON) as instance of Resources
+    const resources = JSON.parse(fs.readFileSync(resourceFilePath));
+    resources.include = resources.include || [];
+    resources.exclude = resources.exclude || [];
+
+    {
+      const listResourceIncludePaths = [];
+      const listResourceExcludePaths = [];
+
+      /* eslint-disable no-restricted-syntax */
+      for (const eachIncludePath of resources.include) {
+        const matchedFiles = glob.sync(eachIncludePath, { cwd: resourceDirectoryPath });
+        listResourceIncludePaths.push.apply(matchedFiles);
+      }
+
+      for (const eachExcludePath of resources.exclude) {
+        const matchedFiles = glob.sync(eachExcludePath, { cwd: resourceDirectoryPath });
+        listResourceExcludePaths.push.apply(matchedFiles);
+      }
+      /* eslint-enable no-restricted-syntax */
+
+      listResourcePaths = diffArrays(listResourceIncludePaths, listResourceExcludePaths);
+      baseDirectoryPath = resources.basePath;
+    }
+
+    return {
+      baseDirectoryPath,
+      listResourcePaths,
     };
-
-    if (!this.has('resourceFilePath')) {
-      this.set('resourceFilePath', resources);
-      return;
-    }
-
-    const resourcesData = this.get('resourceFilePath');
-
-    Object.keys(resources).forEach((key) => {
-      resourcesData[key] =
-        _.uniq(resources[key].concat(resourcesData[key] || []));
-    });
-    this.set('resourceFilePath', resourcesData);
   }
 
-  generateResourceData() {
-    let templateContext;
-
-    if (!this.has('resourceFilePath')) {
-      return;
-    }
-
-    this.removeRemoteResources();
-
-    const resourceData = _.clone(this.get('resourceFilePath'));
-
-    templateContext = '';
-    if (this.has('templateFilePath')) {
-      templateContext = path.dirname(path.resolve(this.get('templateFilePath')));
-    }
-
-    Object.keys(resourceData).forEach((key) => {
-      resourceData[key] = resourceData[key].map((v) => {
-        const tmpFile = tmp.tmpNameSync({ postfix: path.extname(v) });
-
-        const ob = {
-          real: v,
-          abs: path.resolve(templateContext, v),
-          zipPath: path.join(`resources/${key}`, path.basename(tmpFile)),
-        };
-
-        return ob;
-      });
-    });
-
-    this.set('resourceFilePath', resourceData);
-    this.deDuplicateResourceData();
-
-    const resources = _.clone(this.get('resourceFilePath'));
-    Object.keys(resources).forEach((key) => {
-      resources[key] = resources[key].map(v => v.zipPath);
-    });
-
-    this.set('resourceFilePath', resourceData);
-  }
-
-  removeRemoteResources() {
-    if (!this.has('resourceFilePath')) {
-      return;
-    }
-
-    const resources = this.get('resourceFilePath');
-
-    Object.keys(resources).forEach((key) => {
-      resources[key] = resources[key].filter((v) => {
-        if (v === '') {
-          return false;
-        }
-
-        if (v.includes('https://')) {
-          return false;
-        }
-
-        if (v.includes('http://')) {
-          return false;
-        }
-
-        return true;
-      });
-    });
-    this.set('resourceFilePath', resources);
-  }
-
-  deDuplicateResourceData() {
-    const resources = this.get('resourceFilePath');
-    Object.keys(resources).forEach((key) => {
-      resources[key] = resources[key].map((val) => {
-        const curr = val;
-        const prev = resources[key].find(v => v.abs === curr.abs);
-        if (prev) {
-          curr.zipPath = prev.zipPath;
-        }
-        return curr;
-      });
-    });
-    this.set('resourceFilePath', resources);
-  }
-
-  reReferenceTemplateUrls() {
-    let html;
-
-    if (!this.has('templateFilePath')) {
-      return;
-    }
-
-    html = fs.readFileSync(path.resolve(this.get('templateFilePath')));
-    const resources = this.get('resourceFilePath');
-    Object.keys(resources).forEach((key) => {
-      resources[key].forEach((v) => {
-        html = html.toString().replace(new RegExp(v.real, 'g'), v.zipPath);
-      });
-    });
-
-    const tmpTemplateFile = tmp.fileSync({ postfix: '.html' });
-    fs.writeFileSync(tmpTemplateFile.name, html);
-
-    this.set('templateFilePath', tmpTemplateFile.name);
-  }
-
-  generateZip() {
+  static generateZip(listAllFilePaths, baseDirectoryPath) {
     const zip = new JSZip();
-    if (this.has('templateFilePath')) {
-      zip.file('template.html', fs.readFileSync(path.resolve(this.get('templateFilePath'))));
+
+    /* eslint-disable no-restricted-syntax */
+    for (const filePath of listAllFilePaths) {
+      const fileContentBuffer = fs.readFileSync(filePath);
+      const filePathWithinZip = getRelativePathFrom(filePath, baseDirectoryPath);
+      zip.file(filePathWithinZip, fileContentBuffer);
     }
-    const resources = this.get('resourceFilePath');
-    if (resources) {
-      Object.keys(resources).forEach((key) => {
-        resources[key].forEach((v) => {
-          zip.file(v.zipPath, fs.readFileSync(v.abs));
-        });
-      });
-    }
+    /* eslint-enable no-restricted-syntax */
 
     const content = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
 

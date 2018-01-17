@@ -77,7 +77,7 @@ const mapConverterNameToConverter = {
 const CHARTCONFIG = 'chartConfig';
 const INPUTSVG = 'inputSVG';
 const CALLBACKS = 'callbackFilePath';
-const DASHBOARDLOGO = 'dashboardlogo';
+const DASHBOARDLOGO = 'dashboardLogo';
 const OUTPUTFILEDEFINITION = 'outputFileDefinition';
 const CLIENTNAME = 'clientName';
 const TEMPLATE = 'templateFilePath';
@@ -222,7 +222,7 @@ class ExportConfig {
     if (clonedObj.has(TEMPLATE)) {
       const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
       clonedObj.set(RESOURCES, contentZipbase64);
-      clonedObj.set(TEMPLATE, templateFilePathWithinZip);
+      clonedObj.set(TEMPLATE, templatePathWithinZip);
     }
 
     return clonedObj;
@@ -242,7 +242,7 @@ class ExportConfig {
     // from common ancestor directory of extracted file paths plus template
     if (baseDirectoryPath === undefined) {
       const listExtractedPathsPlusTemplate = [];
-      listExtractedPathsPlusTemplate.push.apply(listExtractedPaths);
+      Array.prototype.push.apply(listExtractedPathsPlusTemplate, listExtractedPaths);
       listExtractedPathsPlusTemplate.push(templateFilePath);
 
       const commonDirectoryPath = getCommonAncestorDirectory(listExtractedPathsPlusTemplate);
@@ -267,7 +267,8 @@ class ExportConfig {
     const templateFilePath = this.get(TEMPLATE);
 
     if (templateFilePath !== undefined) {
-      const html = fs.readFileSync(path.resolve().toString());
+      const templateDirectory = path.dirname(templateFilePath);
+      const html = fs.readFileSync(path.resolve(templateFilePath));
       const { JSDOM } = jsdom;
       const { window: { document } } = new JSDOM(html);
 
@@ -275,9 +276,12 @@ class ExportConfig {
       const scripts = [...document.querySelectorAll('script')];
       const imgs = [...document.querySelectorAll('img')];
 
-      const linkURLs = links.map(link => path.resolve(link.href)).filter(isLocalResource);
-      const scriptURLs = scripts.map(script => path.resolve(script.src)).filter(isLocalResource);
-      const imgURLs = imgs.map(img => path.resolve(img.src)).filter(isLocalResource);
+      const linkURLs = links.map(link =>
+        path.resolve(templateDirectory, link.href)).filter(isLocalResource);
+      const scriptURLs = scripts.map(script =>
+        path.resolve(templateDirectory, script.src)).filter(isLocalResource);
+      const imgURLs = imgs.map(img =>
+        path.resolve(templateDirectory, img.src)).filter(isLocalResource);
 
       return [...linkURLs, ...scriptURLs, ...imgURLs];
     }

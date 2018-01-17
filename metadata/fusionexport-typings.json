@@ -25,7 +25,7 @@
     "dashboardHeading": {
         "type": "string"
     },
-    "dashboardSubHeading": {
+    "dashboardSubheading": {
         "type": "string"
     },
     "outputFile": {

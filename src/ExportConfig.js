@@ -7,9 +7,6 @@ const JSZip = require('node-zip');
 const glob = require('glob');
 
 const {
-  stringifyWithFunctions,
-  getTempFolderName,
-  getTempFileName,
   getCommonAncestorDirectory,
   getRelativePathFrom,
   isWithinPath,
@@ -25,7 +22,7 @@ const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json
 const mapMetadataTypeNameToJSValue = {
   string: '',
   boolean: true,
-  number: 1,
+  integer: 1,
 };
 
 function booleanConverter(value) {
@@ -188,7 +185,12 @@ class ExportConfig {
       const oldValue = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
 
-      clonedObj.set(CHARTCONFIG, readFileContent(oldValue, false));
+      let newValue = oldValue;
+      if (oldValue.endsWith('.json')) {
+        newValue = readFileContent(oldValue, false);
+      }
+
+      clonedObj.set(CHARTCONFIG, newValue);
     }
 
     if (clonedObj.has(INPUTSVG)) {
@@ -216,13 +218,13 @@ class ExportConfig {
       const oldValue = clonedObj.get(OUTPUTFILEDEFINITION);
       clonedObj.remove(OUTPUTFILEDEFINITION);
 
-      clonedObj.set(OUTPUTFILEDEFINITION, readFileContent(oldValue, false));
+      clonedObj.set(OUTPUTFILEDEFINITION, readFileContent(oldValue, true));
     }
 
     if (clonedObj.has(TEMPLATE)) {
       const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
       clonedObj.set(RESOURCES, contentZipbase64);
-      clonedObj.set(TEMPLATE, templateFilePathWithinZip);
+      clonedObj.set(TEMPLATE, templatePathWithinZip);
     }
 
     return clonedObj;

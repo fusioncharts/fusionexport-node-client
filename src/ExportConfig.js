@@ -18,7 +18,7 @@ const {
   diffArrays,
 } = require('./utils');
 
-const metadataFolderPath = path.join(__dirname, './metadata');
+const metadataFolderPath = path.join(__dirname, '../metadata');
 const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
 const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
 
@@ -107,6 +107,7 @@ class ExportConfig {
 
   tryConvertType(configName, configValue) {
     const reqdTyping = this.typings[configName];
+    reqdTyping.converter = reqdTyping.converter || '';
     const converterName = reqdTyping.converter.toLowerCase();
     const converterFunction = mapConverterNameToConverter[converterName];
 
@@ -118,7 +119,7 @@ class ExportConfig {
 
   checkTypings(configName, configValue) {
     const reqdTyping = this.typings[configName];
-    const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping];
+    const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
 
     if (typeof configValue !== typeof valueOfType) {
       throw new Error(`${configName} of type ${typeof configValue} is not allowed`);
@@ -164,64 +165,72 @@ class ExportConfig {
     return JSON.stringify(selfObj);
   }
 
-  toObject(strMap) {
+  toObject() {
     const obj = Object.create(null);
-    for (const [k, v] of strMap) {
+
+    /* eslint-disable no-restricted-syntax */
+    for (const [k, v] of this.configs) {
       // We don’t escape the key '__proto__'
       // which can cause problems on older engines
       obj[k] = v;
     }
+    /* eslint-enable no-restricted-syntax */
+
     return obj;
   }
 
   cloneWithProcessedProperties() {
-    const clonedObj = this.toObject();
+    const clonedObj = _.cloneDeep(this);
 
-    clonedObj.clientName = 'NODE';
+    clonedObj[CLIENTNAME] = 'NODE';
 
     if (clonedObj.has(CHARTCONFIG)) {
       const oldValue = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
 
-      clonedObj.Set(CHARTCONFIG, readFileContent(oldValue, false));
+      clonedObj.set(CHARTCONFIG, readFileContent(oldValue, false));
     }
 
     if (clonedObj.has(INPUTSVG)) {
       const oldValue = clonedObj.get(INPUTSVG);
       clonedObj.remove(INPUTSVG);
 
-      clonedObj.Set(INPUTSVG, readFileContent(oldValue, true));
+      clonedObj.set(INPUTSVG, readFileContent(oldValue, true));
     }
 
     if (clonedObj.has(CALLBACKS)) {
       const oldValue = clonedObj.get(CALLBACKS);
       clonedObj.remove(CALLBACKS);
 
-      clonedObj.Set(CALLBACKS, readFileContent(oldValue, true));
+      clonedObj.set(CALLBACKS, readFileContent(oldValue, true));
     }
 
     if (clonedObj.has(DASHBOARDLOGO)) {
       const oldValue = clonedObj.get(DASHBOARDLOGO);
       clonedObj.remove(DASHBOARDLOGO);
 
-      clonedObj.Set(DASHBOARDLOGO, readFileContent(oldValue, true));
+      clonedObj.set(DASHBOARDLOGO, readFileContent(oldValue, true));
     }
 
     if (clonedObj.has(OUTPUTFILEDEFINITION)) {
       const oldValue = clonedObj.get(OUTPUTFILEDEFINITION);
       clonedObj.remove(OUTPUTFILEDEFINITION);
 
-      clonedObj.Set(OUTPUTFILEDEFINITION, readFileContent(oldValue, false));
+      clonedObj.set(OUTPUTFILEDEFINITION, readFileContent(oldValue, false));
     }
 
-    const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
-    clonedObj.Set(RESOURCES, contentZipbase64);
-    clonedObj.Set(TEMPLATE, templateFilePathWithinZip);
+    if (clonedObj.has(TEMPLATE)) {
+      const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
+      clonedObj.set(RESOURCES, contentZipbase64);
+      clonedObj.set(TEMPLATE, templateFilePathWithinZip);
+    }
+
+    return clonedObj;
   }
 
   getFormattedConfigs() {
     const processedObj = this.cloneWithProcessedProperties();
-    return stringifyWithFunctions(processedObj);
+    return processedObj.toJSON();
   }
 
   createBase64ZippedTemplate() {
@@ -255,19 +264,24 @@ class ExportConfig {
   }
 
   findResources() {
-    const html = fs.readFileSync(path.resolve(this.get(TEMPLATE))).toString();
-    const { JSDOM } = jsdom;
-    const { window: { document } } = new JSDOM(html);
+    const templateFilePath = this.get(TEMPLATE);
 
-    const links = [...document.querySelectorAll('link')];
-    const scripts = [...document.querySelectorAll('script')];
-    const imgs = [...document.querySelectorAll('img')];
+    if (templateFilePath !== undefined) {
+      const html = fs.readFileSync(path.resolve().toString());
+      const { JSDOM } = jsdom;
+      const { window: { document } } = new JSDOM(html);
 
-    const linkURLs = links.map(link => path.resolve(link.href)).filter(isLocalResource);
-    const scriptURLs = scripts.map(script => path.resolve(script.src)).filter(isLocalResource);
-    const imgURLs = imgs.map(img => path.resolve(img.src)).filter(isLocalResource);
+      const links = [...document.querySelectorAll('link')];
+      const scripts = [...document.querySelectorAll('script')];
+      const imgs = [...document.querySelectorAll('img')];
 
-    return [...linkURLs, ...scriptURLs, ...imgURLs];
+      const linkURLs = links.map(link => path.resolve(link.href)).filter(isLocalResource);
+      const scriptURLs = scripts.map(script => path.resolve(script.src)).filter(isLocalResource);
+      const imgURLs = imgs.map(img => path.resolve(img.src)).filter(isLocalResource);
+
+      return [...linkURLs, ...scriptURLs, ...imgURLs];
+    }
+    return [];
   }
 
   resolveResourceGlobFiles() {

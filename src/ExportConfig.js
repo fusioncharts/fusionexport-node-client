@@ -302,12 +302,16 @@ class ExportConfig {
     }
 
     const resourceFilePath = _.clone(this.get('resourceFilePath'));
-    const resourceDirectoryPath = path.dirname(resourceFilePath);
+    let resourceDirectoryPath = path.dirname(resourceFilePath);
 
     // Load resourceFilePath content (JSON) as instance of Resources
     const resources = JSON.parse(fs.readFileSync(resourceFilePath));
     resources.include = resources.include || [];
     resources.exclude = resources.exclude || [];
+    // New attribute `resolvePath` - overloads actual direcotry location for glob resolve
+    if (resources.resolvePath !== undefined) {
+      resourceDirectoryPath = resources.resolvePath;
+    }
 
     {
       const listResourceIncludePaths = [];

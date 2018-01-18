@@ -64,6 +64,7 @@ class ExportManager extends EventEmitter {
       } else {
         this.emit('error', e.message);
       }
+      this.client.close();
     });
   }
 
@@ -83,6 +84,7 @@ class ExportManager extends EventEmitter {
           if (!this.isError) {
             this.outputData = outputData.substr(EXPORT_DATA.length);
             this.emit('exportDone', ExportManager.parseExportdData(this.outputData));
+            this.client.close();
           }
         }
         if (outputData.startsWith(EXPORT_EVENT)) {

@@ -1,3 +1,4 @@
+const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
@@ -77,6 +78,7 @@ const CALLBACKS = 'callbackFilePath';
 const DASHBOARDLOGO = 'dashboardLogo';
 const OUTPUTFILEDEFINITION = 'outputFileDefinition';
 const CLIENTNAME = 'clientName';
+const PLATFORM = 'platform';
 const TEMPLATE = 'templateFilePath';
 const RESOURCES = 'resourceFilePath';
 
@@ -86,7 +88,9 @@ class ExportConfig {
     this.configs = new Map();
     this.metadata = JSON.parse(fs.readFileSync(metadataFilePath));
     this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
+    this.disableTypeCheck = false;
   }
+
 
   set(name, value) {
     const configName = name;
@@ -95,8 +99,10 @@ class ExportConfig {
       throw new Error('Only strings are allowed as a key name');
     }
 
-    configValue = this.tryConvertType(configName, configValue);
-    this.checkTypings(configName, configValue);
+    if (!this.disableTypeCheck) {
+      configValue = this.tryConvertType(configName, configValue);
+      this.checkTypings(configName, configValue);
+    }
     this.configs.set(configName, configValue);
 
     return this;
@@ -178,8 +184,10 @@ class ExportConfig {
 
   cloneWithProcessedProperties() {
     const clonedObj = _.cloneDeep(this);
+    clonedObj.disableTypeCheck = true;
 
-    clonedObj[CLIENTNAME] = 'NODE';
+    clonedObj.set(CLIENTNAME, 'NODE');
+    clonedObj.set(PLATFORM, os.platform());
 
     if (clonedObj.has(CHARTCONFIG)) {
       const oldValue = clonedObj.get(CHARTCONFIG);

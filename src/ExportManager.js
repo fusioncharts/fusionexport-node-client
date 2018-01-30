@@ -83,7 +83,7 @@ class ExportManager extends EventEmitter {
         if (outputData.startsWith(EXPORT_DATA)) {
           if (!this.isError) {
             this.outputData = outputData.substr(EXPORT_DATA.length);
-            this.emit('exportDone', ExportManager.parseExportdData(this.outputData));
+            this.emit('exportDone', ExportManager.parseExportedData(this.outputData));
             this.client.close();
           }
         }
@@ -95,7 +95,7 @@ class ExportManager extends EventEmitter {
     });
   }
 
-  static parseExportdData(data) {
+  static parseExportedData(data) {
     return JSON.parse(data);
   }
 
@@ -116,7 +116,7 @@ class ExportManager extends EventEmitter {
           cyclesCount += 1;
           if (this.outputData) {
             clearInterval(tmtId);
-            const outputFinalData = ExportManager.parseExportdData(this.outputData);
+            const outputFinalData = ExportManager.parseExportedData(this.outputData);
             resolve(outputFinalData);
           }
           if (TOTAL_ALLOWED_CYCLES === cyclesCount) {

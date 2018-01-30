@@ -89,6 +89,7 @@ class ExportConfig {
     this.metadata = JSON.parse(fs.readFileSync(metadataFilePath));
     this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
     this.disableTypeCheck = false;
+    this.clientName = 'NODE';
   }
 
 
@@ -186,7 +187,7 @@ class ExportConfig {
     const clonedObj = _.cloneDeep(this);
     clonedObj.disableTypeCheck = true;
 
-    clonedObj.set(CLIENTNAME, 'NODE');
+    clonedObj.set(CLIENTNAME, this.clientName);
     clonedObj.set(PLATFORM, os.platform());
 
     if (clonedObj.has(CHARTCONFIG)) {

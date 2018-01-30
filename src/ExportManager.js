@@ -19,6 +19,7 @@ class ExportManager extends EventEmitter {
     this.config = options ? Object.assign({}, config, options) : config;
     this.config.url = `ws://${this.config.host}:${this.config.port}`;
     this.client = null;
+    this.clientName = undefined;
   }
 
   emitData(target, method, exportConfig) {
@@ -105,6 +106,11 @@ class ExportManager extends EventEmitter {
         const err = new Error('Not an instance of ExportConfig class');
         this.emit('error', err);
         reject(err);
+      }
+      if (typeof this.clientName !== 'undefined') {
+        /* eslint-disable no-param-reassign */
+        exportConfig.clientName = this.clientName;
+        /* eslint-enable */
       }
       this.connect().then(() => {
         this.emitData('ExportManager', 'export', exportConfig);

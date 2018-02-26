@@ -59,6 +59,7 @@ function isWithinPath(checkeePath, parentDirectoryPath) {
 }
 
 function isLocalResource(testResourceFilePath) {
+  if (!testResourceFilePath) return false;
   const remoteResourcePattern = new RegExp('^http(s)?:\\/\\/');
   return !remoteResourcePattern.test(testResourceFilePath.trim());
 }

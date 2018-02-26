@@ -2,14 +2,12 @@ const WebSocket = require('ws');
 const { EventEmitter } = require('events');
 const fs = require('fs-extra');
 const path = require('path');
-
 const ExportConfig = require('./ExportConfig');
 const config = require('./config.js');
 const logger = require('./logger');
 
 const EXPORT_DATA = 'EXPORT_DATA:';
 const EXPORT_EVENT = 'EXPORT_EVENT:';
-
 
 class ExportManager extends EventEmitter {
   constructor(options) {
@@ -84,7 +82,7 @@ class ExportManager extends EventEmitter {
         if (outputData.startsWith(EXPORT_DATA)) {
           if (!this.isError) {
             this.outputData = outputData.substr(EXPORT_DATA.length);
-            this.emit('exportDone', ExportManager.parseExportedData(this.outputData));
+            this.emit('exportDone', ExportManager.parseExportedData(this.outputData).data);
             this.client.close();
           }
         }
@@ -122,7 +120,7 @@ class ExportManager extends EventEmitter {
           cyclesCount += 1;
           if (this.outputData) {
             clearInterval(tmtId);
-            const outputFinalData = ExportManager.parseExportedData(this.outputData);
+            const outputFinalData = ExportManager.parseExportedData(this.outputData).data;
             resolve(outputFinalData);
           }
           if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
@@ -138,12 +136,12 @@ class ExportManager extends EventEmitter {
     });
   }
 
-  static saveExportedFiles(dirPath, exportedOutput) {
+  static saveExportedFiles(exportedOutput, dirPath = '.') {
     if (!exportedOutput) {
       throw new Error('Exported Output files are missing');
     }
     fs.ensureDirSync(dirPath);
-    exportedOutput.data.forEach((item) => {
+    exportedOutput.forEach((item) => {
       const filePath = path.join(dirPath, item.realName);
       const data = Buffer.from(item.fileContent, 'base64');
       fs.outputFileSync(filePath, data);

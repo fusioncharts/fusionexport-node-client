@@ -283,16 +283,16 @@ class ExportConfig {
       const { JSDOM } = jsdom;
       const { window: { document } } = new JSDOM(html);
 
-      const links = [...document.querySelectorAll('link')];
-      const scripts = [...document.querySelectorAll('script')];
-      const imgs = [...document.querySelectorAll('img')];
+      const links = [...document.querySelectorAll('link')].map(l => l.href);
+      const scripts = [...document.querySelectorAll('script')].map(s => s.src);
+      const imgs = [...document.querySelectorAll('img')].map(i => i.src);
 
-      const linkURLs = links.map(link =>
-        path.resolve(templateDirectory, link.href)).filter(isLocalResource);
-      const scriptURLs = scripts.map(script =>
-        path.resolve(templateDirectory, script.src)).filter(isLocalResource);
-      const imgURLs = imgs.map(img =>
-        path.resolve(templateDirectory, img.src)).filter(isLocalResource);
+      const linkURLs = links.filter(isLocalResource).map(link =>
+        path.resolve(templateDirectory, link));
+      const scriptURLs = scripts.filter(isLocalResource).map(script =>
+        path.resolve(templateDirectory, script));
+      const imgURLs = imgs.filter(isLocalResource).map(img =>
+        path.resolve(templateDirectory, img));
 
       return [...linkURLs, ...scriptURLs, ...imgURLs];
     }

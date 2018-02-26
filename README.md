@@ -9,7 +9,6 @@ To install the NodeJS module, simply use npm:
 $ npm install fusionexport-node-client --save
 ```
 
-
 ## Usage
 
 To require the SDK into your project:
@@ -17,11 +16,9 @@ To require the SDK into your project:
 ```js
 const FusionExport = require('fusionexport-node-client');
 ```
-## API Reference
 
-You can find the full reference [here](https://www.fusioncharts.com/dev/exporting-charts/using-fusionexport/sdk-api-reference/nodejs.html)
+## Getting Started
 
-## Example
 Let’s start with a simple chart export. For exporting a single chart, save the chartConfig in a JSON file. The config should be inside an array.
 ```js
 const fs = require('fs');
@@ -57,3 +54,7 @@ fusion.on('error', (err) => {
   // catch error here
 });
 ```
+
+## API Reference
+
+You can find the full reference [here](https://www.fusioncharts.com/dev/exporting-charts/using-fusionexport/sdk-api-reference/nodejs.html).

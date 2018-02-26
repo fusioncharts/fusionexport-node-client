@@ -20,38 +20,43 @@ const FusionExport = require('fusionexport-node-client');
 ## Getting Started
 
 Let’s start with a simple chart export. For exporting a single chart, save the chartConfig in a JSON file. The config should be inside an array.
+
 ```js
-const fs = require('fs');
+// Exporting a chart
+
 const path = require('path');
 
-// require fusionexport
-const FusionExport = require('fusionexport-node-client');
+// Require FusionExport
+const { ExportManager, ExportConfig } = require('../');
 
-const chartConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'chart-config-file.json')).toString());
-const host = '127.0.0.1';
-const port = 1337;
+// Instantiate ExportManager
+const exportManager = new ExportManager();
 
-// instantiate FusionExport
-const fusion = new FusionExport({ host, port });
+// Instantiate ExportConfig and add the required configurations
+const exportConfig = new ExportConfig();
 
-const exportConfig = {
-  chartConfig,
-};
+exportConfig.set('chartConfig', path.join(__dirname, 'resources', 'single.json'));
 
 // provide the export config
-fusion.export(exportConfig);
+exportManager.export(exportConfig);
 
-fusion.on('exportDone', (files) => {
-  // files can be read from files array
-  // e.g. [{tmpPath:"", realName: ""}]
+// Called when export is done
+exportManager.on('exportDone', (outputFileBag) => {
+  outputFileBag.forEach((op) => {
+    console.log(`DONE: ${op.realName}`);
+  });
+
+  ExportManager.saveExportedFiles(outputFileBag);
 });
 
-fusion.on('exportStateChange', (state) => {
-  // called for export progress state change
+// Called on each export state change
+exportManager.on('exportStateChange', (state) => {
+  console.log(`[${state.reporter}] ${state.customMsg}`);
 });
 
-fusion.on('error', (err) => {
-  // catch error here
+// Called on erroe
+exportManager.on('error', (err) => {
+  console.error(err);
 });
 ```
 

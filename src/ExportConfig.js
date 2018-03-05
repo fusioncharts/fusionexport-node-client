@@ -92,7 +92,6 @@ class ExportConfig {
     this.clientName = 'NODE';
   }
 
-
   set(name, value) {
     const configName = name;
     let configValue = value;

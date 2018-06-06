@@ -1,9 +1,9 @@
 # FusionExport Node Client
 
-NodeJS SDK for FusionExport. Enables exporting from FusionExport through NodeJS.
+Node.js SDK for FusionExport. Enables exporting from FusionExport through Node.js.
 
 ## Installation
-To install the NodeJS module, simply use npm:
+To install the Node.js module, simply use npm:
 
 ```bash
 $ npm install fusionexport-node-client --save

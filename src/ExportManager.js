@@ -1,14 +1,13 @@
-const net = require('net');
+const WebSocket = require('ws');
+const { EventEmitter } = require('events');
+const fs = require('fs-extra');
 const path = require('path');
+const ExportConfig = require('./ExportConfig');
 const config = require('./config.js');
 const logger = require('./logger');
-const {
-  EventEmitter,
-} = require('events');
 
 const EXPORT_DATA = 'EXPORT_DATA:';
 const EXPORT_EVENT = 'EXPORT_EVENT:';
-const UNIQUE_BORDER = ':8780dc3c41214695ae96b3432963d744:';
 
 class ExportManager extends EventEmitter {
   constructor(options) {
@@ -16,49 +15,44 @@ class ExportManager extends EventEmitter {
     this.outputData = null;
     this.isError = false;
     this.config = options ? Object.assign({}, config, options) : config;
-    this.client = new net.Socket();
-    this.connect();
-    this.registerOnEndListener();
-    this.registerOnDataRecievedListener();
+    this.config.url = `ws://${this.config.host}:${this.config.port}`;
+    this.client = null;
+    this.clientName = undefined;
   }
 
-  static stringifyWithFunctions(object) {
-    return JSON.stringify(object, (key, val) => {
-      if (typeof val === 'function') {
-        return val.toString().replace(/\n/g, ' ');
-      }
-      return val;
-    });
-  }
-
-
-  emitData(target, method, payload) {
-    const outload = payload;
-
-    if (outload.templateFilePath) {
-      outload.templateFilePath = path.resolve(outload.templateFilePath);
-    }
-
-    if (outload.callbackFilePath) {
-      outload.callbackFilePath = path.resolve(outload.callbackFilePath);
-    }
-
-    if (outload.inputSVG) {
-      outload.inputSVG = path.resolve(outload.inputSVG);
-    }
-
-    const options = ExportManager.stringifyWithFunctions(outload);
-
+  emitData(target, method, exportConfig) {
+    const options = exportConfig.getFormattedConfigs();
     const message = `${target}.${method}<=:=>${options}`;
     const buffer = Buffer.from(message, 'utf8');
-    this.client.write(buffer);
+    this.client.send(buffer, (err) => {
+      if (err) {
+        this.emit('error', err);
+      }
+    });
   }
 
   connect() {
-    this.client.connect(this.config.port, this.config.host, () => {
-      logger.info('Connected with FusionExport Service');
+    return new Promise((resolve, reject) => {
+      let rejectionId;
+      this.client = new WebSocket(this.config.url);
+      this.registerOnErrorListener();
+      this.registerOnEndListener();
+      this.registerOnDataRecievedListener();
+
+      const onOpenListener = () => {
+        logger.info('Connected with FusionExport Service');
+        clearTimeout(rejectionId);
+        resolve();
+      };
+
+      rejectionId = setTimeout(() => {
+        const errorMsg = 'Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command';
+        reject(new Error(errorMsg));
+        this.client.removeEventListener('open', onOpenListener);
+      }, 2000);
+
+      this.client.on('open', onOpenListener);
     });
-    this.registerOnErrorListener();
   }
 
   registerOnErrorListener() {
@@ -69,6 +63,7 @@ class ExportManager extends EventEmitter {
       } else {
         this.emit('error', e.message);
       }
+      this.client.close();
     });
   }
 
@@ -81,56 +76,84 @@ class ExportManager extends EventEmitter {
   }
 
   registerOnDataRecievedListener() {
-    this.client.on('data', (data) => {
+    this.client.on('message', (data) => {
       const outputData = data.toString();
-      const msgs = outputData.split(UNIQUE_BORDER);
-      msgs.forEach((msg) => {
-        if (msg) {
-          if (msg.startsWith(EXPORT_DATA)) {
-            if (!this.isError) {
-              this.outputData = msg.substr(EXPORT_DATA.length);
-              this.emit('exportDone', this.outputData);
-            }
-          }
-          if (msg.startsWith(EXPORT_EVENT)) {
-            const meta = JSON.parse(msg.substr(EXPORT_EVENT.length));
-            this.emit('exportStateChange', meta);
+      if (outputData) {
+        if (outputData.startsWith(EXPORT_DATA)) {
+          if (!this.isError) {
+            this.outputData = outputData.substr(EXPORT_DATA.length);
+            this.emit('exportDone', ExportManager.parseExportedData(this.outputData).data);
+            this.client.close();
           }
         }
+        if (outputData.startsWith(EXPORT_EVENT)) {
+          const meta = JSON.parse(outputData.substr(EXPORT_EVENT.length));
+          this.emit('exportStateChange', meta);
+        }
+      }
+    });
+  }
+
+  static parseExportedData(data) {
+    return JSON.parse(data);
+  }
+
+  export(exportConfig) {
+    return new Promise((resolve, reject) => {
+      if (!(exportConfig instanceof ExportConfig)) {
+        const err = new Error('Not an instance of ExportConfig class');
+        this.emit('error', err);
+        reject(err);
+      }
+      if (typeof this.clientName !== 'undefined') {
+        /* eslint-disable no-param-reassign */
+        exportConfig.clientName = this.clientName;
+        /* eslint-enable */
+      }
+      this.connect().then(() => {
+        this.emitData('ExportManager', 'export', exportConfig);
+        let cyclesCount = 0;
+        const cycleStep = 10;
+        const MAX_WAIT_TIME = this.config.max_wait_sec * 1000;
+        const TOTAL_ALLOWED_CYCLES = MAX_WAIT_TIME / cycleStep;
+        const tmtId = setInterval(() => {
+          cyclesCount += 1;
+          if (this.outputData) {
+            clearInterval(tmtId);
+            const outputFinalData = ExportManager.parseExportedData(this.outputData).data;
+            resolve(outputFinalData);
+          }
+          if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
+            const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
+            reject(new Error(errorMsg));
+            this.emit('error', errorMsg);
+            this.isError = true;
+          }
+        }, cycleStep);
+      }).catch((err) => {
+        this.emit('error', err.toString());
       });
     });
   }
 
-  static parseExportdData(data) {
-    if (data.includes(UNIQUE_BORDER)) {
-      return JSON.parse(data.substr(data.indexOf(EXPORT_EVENT))).data;
+  static saveExportedFiles(exportedOutput, dirPath = '.') {
+    if (!exportedOutput) {
+      throw new Error('Exported Output files are missing');
     }
-
-    return JSON.parse(data).data;
+    fs.ensureDirSync(dirPath);
+    exportedOutput.forEach((item) => {
+      const filePath = path.join(dirPath, item.realName);
+      const data = Buffer.from(item.fileContent, 'base64');
+      fs.outputFileSync(filePath, data);
+    });
   }
 
-  export(options) {
-    this.emitData('ExportManager', 'export', options);
-    return new Promise((resolve, reject) => {
-      let cyclesCount = 0;
-      const cycleStep = 10;
-      const MAX_WAIT_TIME = this.config.max_wait_sec * 1000;
-      const TOTAL_ALLOWED_CYCLES = MAX_WAIT_TIME / cycleStep;
-      const tmtId = setInterval(() => {
-        cyclesCount += 1;
-        if (this.outputData) {
-          clearInterval(tmtId);
-          const outputFinalData = ExportManager.parseExportdData(this.outputData);
-          resolve(outputFinalData);
-        }
-        if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
-          const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
-          reject(new Error(errorMsg));
-          this.emit('error', errorMsg);
-          this.isError = true;
-        }
-      }, cycleStep);
-    });
+  static getExportedFileNames(exportedOutput) {
+    if (!exportedOutput) {
+      throw new Error('Exported Output files are missing');
+    }
+    const fileNames = exportedOutput.data.map(item => item.realName);
+    return fileNames;
   }
 }
 

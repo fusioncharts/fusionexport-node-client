@@ -5,7 +5,9 @@ const path = require('path');
 const ExportConfig = require('./ExportConfig');
 const config = require('./config.js');
 const logger = require('./logger');
-
+const mkdirp = require('mkdirp');
+const aws = require('aws-sdk');
+const ftp = require('ftp');
 const EXPORT_DATA = 'EXPORT_DATA:';
 const EXPORT_EVENT = 'EXPORT_EVENT:';
 
@@ -147,7 +149,49 @@ class ExportManager extends EventEmitter {
       fs.outputFileSync(filePath, data);
     });
   }
+  static uploadFileToAmazonS3(exportedOutput,bucket,accessKey,secretAccessKey){
+    aws.config.update({ accessKeyId: accessKey, secretAccessKey: secretAccessKey });
+    exportedOutput.forEach((item) => {
+      const base64data = new Buffer(item.fileContent,'binary');
+      var s3 = new aws.S3();
+      s3.putObject({
+        Bucket: bucket,
+        Key: item.realName,
+        Body: base64data,
+        ACL: 'public-read'
+      },function (resp) {
+        console.log('Successfully uploaded file.');
+      });
+      
+    });
 
+  }
+  static uploadFileToFTPserver(exportedOutput,usr,psw,hst,remoteAddress,port){
+    var client = new ftp();
+    var prt = 21;
+    if(typeof(port)!== 'undefined'){
+      prt = port;
+    }
+    client.connect({
+      host: hst,
+      port: prt,
+      user: usr,
+      password: psw
+    });
+    client.on('ready',function(){
+      exportedOutput.forEach((item) => {
+        const base64data = new Buffer(item.fileContent,'binary');
+        client.put(base64data, remoteAddress + "/" + item.realName, function(err) {
+          console.log("uploaded");
+          if (err) throw err;
+          
+        });
+      
+      });
+      client.end();
+    })
+      
+  }
   static getExportedFileNames(exportedOutput) {
     if (!exportedOutput) {
       throw new Error('Exported Output files are missing');

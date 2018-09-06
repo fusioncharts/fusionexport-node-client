@@ -80,8 +80,7 @@ const OUTPUTFILEDEFINITION = 'outputFileDefinition';
 const CLIENTNAME = 'clientName';
 const PLATFORM = 'platform';
 const TEMPLATE = 'templateFilePath';
-const RESOURCES = 'resourceFilePath';
-
+const PAYLOAD = 'payload';
 
 class ExportConfig {
   constructor() {
@@ -189,6 +188,8 @@ class ExportConfig {
     clonedObj.set(CLIENTNAME, this.clientName);
     clonedObj.set(PLATFORM, os.platform());
 
+    const zipBag = [];
+
     if (clonedObj.has(CHARTCONFIG)) {
       const oldValue = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
@@ -205,45 +206,85 @@ class ExportConfig {
       const oldValue = clonedObj.get(INPUTSVG);
       clonedObj.remove(INPUTSVG);
 
-      clonedObj.set(INPUTSVG, readFileContent(oldValue, true));
+      clonedObj.set(INPUTSVG, {
+        internalPath: 'inputSVG.svg',
+        externalPath: oldValue,
+      });
     }
 
     if (clonedObj.has(CALLBACKS)) {
       const oldValue = clonedObj.get(CALLBACKS);
       clonedObj.remove(CALLBACKS);
 
-      clonedObj.set(CALLBACKS, readFileContent(oldValue, true));
+      clonedObj.set(CALLBACKS, {
+        internalPath: 'callbackFile.js',
+        externalPath: oldValue,
+      });
     }
 
     if (clonedObj.has(DASHBOARDLOGO)) {
       const oldValue = clonedObj.get(DASHBOARDLOGO);
       clonedObj.remove(DASHBOARDLOGO);
 
-      clonedObj.set(DASHBOARDLOGO, readFileContent(oldValue, true));
+      const ext = path.extname(oldValue);
+      clonedObj.set(DASHBOARDLOGO, {
+        internalPath: `dashboardLogo${ext}`,
+        externalPath: oldValue,
+      });
     }
 
     if (clonedObj.has(OUTPUTFILEDEFINITION)) {
       const oldValue = clonedObj.get(OUTPUTFILEDEFINITION);
       clonedObj.remove(OUTPUTFILEDEFINITION);
 
-      clonedObj.set(OUTPUTFILEDEFINITION, readFileContent(oldValue, true));
+      clonedObj.set(OUTPUTFILEDEFINITION, {
+        internalPath: 'outputFileDefinition.js',
+        externalPath: oldValue,
+      });
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
-      clonedObj.set(RESOURCES, contentZipbase64);
+      const { zipPaths, templatePathWithinZip } = clonedObj.createTemplateZipPaths();
       clonedObj.set(TEMPLATE, templatePathWithinZip);
+      zipBag.push(...zipPaths);
+    }
+
+    if (zipBag.length > 0) {
+      const zipFile = ExportConfig.generateZip(zipBag);
+      clonedObj.set(PAYLOAD, zipFile);
     }
 
     return clonedObj;
   }
 
   getFormattedConfigs() {
-    const processedObj = this.cloneWithProcessedProperties();
-    return processedObj.toJSON();
+    const clonedObj = this.cloneWithProcessedProperties();
+
+    const { typings } = clonedObj;
+
+    const keys = Array.from(clonedObj.configs.keys());
+    const processedObj = keys.reduce((obj, key) => {
+      const val = clonedObj.configs.get(key);
+
+      if (key === 'resourceFilePath') return obj;
+
+      if (key === 'payload') {
+        // eslint-disable-next-line no-param-reassign
+        obj[key] = val;
+      }
+
+      if (Object.hasOwnProperty.call(typings, key)) {
+        // eslint-disable-next-line no-param-reassign
+        obj[key] = val;
+      }
+
+      return obj;
+    }, {});
+
+    return processedObj;
   }
 
-  createBase64ZippedTemplate() {
+  createTemplateZipPaths() {
     const listExtractedPaths = this.findResources();
     let { baseDirectoryPath, listResourcePaths } = this.resolveResourceGlobFiles();
     const templateFilePath = this.get(TEMPLATE);
@@ -264,11 +305,17 @@ class ExportConfig {
     listResourcePaths = listResourcePaths
       .filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
 
-    const zipFile = ExportConfig.generateZip([
-      ...listExtractedPaths, ...listResourcePaths, templateFilePath], baseDirectoryPath);
+    const zipPaths = ExportConfig.generatePathForZip([
+      ...listExtractedPaths, ...listResourcePaths, templateFilePath,
+    ], baseDirectoryPath);
+
+    const prefixedZipPaths = zipPaths.map(zipPath => ({
+      internalPath: path.join('template', zipPath.internalPath),
+      externalPath: zipPath.externalPath,
+    }));
 
     return {
-      contentZipbase64: readFileContent(path.resolve(zipFile.name), true),
+      zipPaths: prefixedZipPaths,
       templatePathWithinZip: getRelativePathFrom(templateFilePath, baseDirectoryPath),
     };
   }
@@ -347,16 +394,22 @@ class ExportConfig {
     };
   }
 
-  static generateZip(listAllFilePaths, baseDirectoryPath) {
+  static generatePathForZip(listAllFilePaths, baseDirectoryPath) {
+    return listAllFilePaths.map((filePath) => {
+      const filePathWithinZip = getRelativePathFrom(filePath, baseDirectoryPath);
+      return {
+        internalPath: filePathWithinZip,
+        externalPath: filePath,
+      };
+    });
+  }
+
+  static generateZip(fileBag) {
     const zip = new JSZip();
 
-    /* eslint-disable no-restricted-syntax */
-    for (const filePath of listAllFilePaths) {
-      const fileContentBuffer = fs.readFileSync(filePath);
-      const filePathWithinZip = getRelativePathFrom(filePath, baseDirectoryPath);
-      zip.file(filePathWithinZip, fileContentBuffer);
-    }
-    /* eslint-enable no-restricted-syntax */
+    fileBag.forEach((file) => {
+      zip.file(file.internalPath, readFileContent(file.externalPath));
+    });
 
     const content = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
 
@@ -364,7 +417,7 @@ class ExportConfig {
 
     fs.writeFileSync(zipFile.name, content, 'binary');
 
-    return zipFile;
+    return zipFile.name;
   }
 }
 

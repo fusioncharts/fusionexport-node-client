@@ -40,10 +40,6 @@
     "outputFileDefinition": {
         "type": "string"
     },
-    "exportAsZip": {
-        "type": "boolean",
-        "converter": "BooleanConverter"
-    },
     "resourceFilePath": {
         "type": "string"
     }

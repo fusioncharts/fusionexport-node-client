@@ -4,7 +4,7 @@ const path = require('path');
 const _ = require('lodash');
 const jsdom = require('jsdom');
 const tmp = require('tmp');
-const JSZip = require('node-zip');
+const AdmZip = require('adm-zip');
 const glob = require('glob');
 
 const {
@@ -80,6 +80,7 @@ const OUTPUTFILEDEFINITION = 'outputFileDefinition';
 const CLIENTNAME = 'clientName';
 const PLATFORM = 'platform';
 const TEMPLATE = 'templateFilePath';
+const ASYNCCAPTURE = 'asyncCapture';
 const PAYLOAD = 'payload';
 
 class ExportConfig {
@@ -109,6 +110,11 @@ class ExportConfig {
 
   tryConvertType(configName, configValue) {
     const reqdTyping = this.typings[configName];
+
+    if (!reqdTyping) {
+      throw new Error(`${configName} is not allowed`);
+    }
+
     reqdTyping.converter = reqdTyping.converter || '';
     const converterName = reqdTyping.converter.toLowerCase();
     const converterFunction = mapConverterNameToConverter[converterName];
@@ -121,6 +127,11 @@ class ExportConfig {
 
   checkTypings(configName, configValue) {
     const reqdTyping = this.typings[configName];
+
+    if (!reqdTyping) {
+      throw new Error(`${configName} is not allowed`);
+    }
+
     const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
 
     if (typeof configValue !== typeof valueOfType) {
@@ -206,20 +217,24 @@ class ExportConfig {
       const oldValue = clonedObj.get(INPUTSVG);
       clonedObj.remove(INPUTSVG);
 
-      clonedObj.set(INPUTSVG, {
-        internalPath: 'inputSVG.svg',
+      const internalFilePath = 'inputSVG.svg';
+      zipBag.push({
+        internalPath: internalFilePath,
         externalPath: oldValue,
       });
+      clonedObj.set(INPUTSVG, internalFilePath);
     }
 
     if (clonedObj.has(CALLBACKS)) {
       const oldValue = clonedObj.get(CALLBACKS);
       clonedObj.remove(CALLBACKS);
 
-      clonedObj.set(CALLBACKS, {
-        internalPath: 'callbackFile.js',
+      const internalFilePath = 'callbackFile.js';
+      zipBag.push({
+        internalPath: internalFilePath,
         externalPath: oldValue,
       });
+      clonedObj.set(CALLBACKS, internalFilePath);
     }
 
     if (clonedObj.has(DASHBOARDLOGO)) {
@@ -227,26 +242,39 @@ class ExportConfig {
       clonedObj.remove(DASHBOARDLOGO);
 
       const ext = path.extname(oldValue);
-      clonedObj.set(DASHBOARDLOGO, {
-        internalPath: `dashboardLogo${ext}`,
+      const internalFilePath = `dashboardLogo${ext}`;
+      zipBag.push({
+        internalPath: internalFilePath,
         externalPath: oldValue,
       });
+      clonedObj.set(DASHBOARDLOGO, internalFilePath);
     }
 
     if (clonedObj.has(OUTPUTFILEDEFINITION)) {
       const oldValue = clonedObj.get(OUTPUTFILEDEFINITION);
       clonedObj.remove(OUTPUTFILEDEFINITION);
 
-      clonedObj.set(OUTPUTFILEDEFINITION, {
-        internalPath: 'outputFileDefinition.js',
+      const internalFilePath = 'outputFileDefinition.js';
+      zipBag.push({
+        internalPath: internalFilePath,
         externalPath: oldValue,
       });
+      clonedObj.set(OUTPUTFILEDEFINITION, internalFilePath);
     }
 
     if (clonedObj.has(TEMPLATE)) {
       const { zipPaths, templatePathWithinZip } = clonedObj.createTemplateZipPaths();
       clonedObj.set(TEMPLATE, templatePathWithinZip);
       zipBag.push(...zipPaths);
+    }
+
+    if (clonedObj.has(ASYNCCAPTURE)) {
+      const oldValue = clonedObj.get(ASYNCCAPTURE);
+      clonedObj.remove(ASYNCCAPTURE);
+
+      if (oldValue) {
+        clonedObj.set(ASYNCCAPTURE, 'true');
+      }
     }
 
     if (zipBag.length > 0) {
@@ -314,9 +342,14 @@ class ExportConfig {
       externalPath: zipPath.externalPath,
     }));
 
+    const templatePathWithinZip = path.join(
+      'template',
+      getRelativePathFrom(templateFilePath, baseDirectoryPath),
+    );
+
     return {
       zipPaths: prefixedZipPaths,
-      templatePathWithinZip: getRelativePathFrom(templateFilePath, baseDirectoryPath),
+      templatePathWithinZip,
     };
   }
 
@@ -405,17 +438,17 @@ class ExportConfig {
   }
 
   static generateZip(fileBag) {
-    const zip = new JSZip();
+    const zip = new AdmZip();
 
     fileBag.forEach((file) => {
-      zip.file(file.internalPath, readFileContent(file.externalPath));
+      const internalDir = path.dirname(file.internalPath);
+      const internalName = path.basename(file.internalPath);
+      zip.addLocalFile(file.externalPath, internalDir, internalName);
     });
-
-    const content = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
 
     const zipFile = tmp.fileSync({ postfix: '.zip' });
 
-    fs.writeFileSync(zipFile.name, content, 'binary');
+    zip.writeZip(zipFile.name);
 
     return zipFile.name;
   }

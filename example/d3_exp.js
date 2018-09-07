@@ -16,23 +16,8 @@ exportConfig.set('type', 'jpg');
 exportConfig.set('asyncCapture', true);
 
 // provide the export config
-exportManager.export(exportConfig);
-
-// Called when export is done
-exportManager.on('exportDone', (outputFileBag) => {
-  outputFileBag.forEach((op) => {
-    console.log(`DONE: ${op.realName}`);
-  });
-
-  ExportManager.saveExportedFiles(outputFileBag);
-});
-
-// Called on each export state change
-exportManager.on('exportStateChange', (state) => {
-  console.log(`[${state.reporter}] ${state.customMsg}`);
-});
-
-// Called on erroe
-exportManager.on('error', (err) => {
-  console.error(err);
+exportManager.export(exportConfig).then((exportedFile) => {
+  ExportManager.saveExportedFiles(exportedFile, '.', true);
+}).catch((err) => {
+  console.log(err);
 });

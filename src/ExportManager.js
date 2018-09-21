@@ -1,159 +1,71 @@
-const WebSocket = require('ws');
-const { EventEmitter } = require('events');
-const fs = require('fs-extra');
+// const WebSocket = require('ws');
 const path = require('path');
-const ExportConfig = require('./ExportConfig');
+const fs = require('fs-extra');
+const _ = require('lodash');
+const AdmZip = require('adm-zip');
+const tmp = require('tmp');
+const request = require('request');
+const { EventEmitter } = require('events');
 const config = require('./config.js');
-const logger = require('./logger');
-
-const EXPORT_DATA = 'EXPORT_DATA:';
-const EXPORT_EVENT = 'EXPORT_EVENT:';
 
 class ExportManager extends EventEmitter {
   constructor(options) {
     super();
-    this.outputData = null;
-    this.isError = false;
     this.config = options ? Object.assign({}, config, options) : config;
-    this.config.url = `ws://${this.config.host}:${this.config.port}`;
-    this.client = null;
-    this.clientName = undefined;
+    this.config.url = `http://${this.config.host}:${this.config.port}/api/v2.0/export`;
   }
 
-  emitData(target, method, exportConfig) {
-    const options = exportConfig.getFormattedConfigs();
-    const message = `${target}.${method}<=:=>${options}`;
-    const buffer = Buffer.from(message, 'utf8');
-    this.client.send(buffer, (err) => {
-      if (err) {
-        this.emit('error', err);
-      }
-    });
-  }
-
-  connect() {
+  export(exportConfig, dirPath = '.', unzip = false) {
     return new Promise((resolve, reject) => {
-      let rejectionId;
-      this.client = new WebSocket(this.config.url);
-      this.registerOnErrorListener();
-      this.registerOnEndListener();
-      this.registerOnDataRecievedListener();
+      const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
 
-      const onOpenListener = () => {
-        logger.info('Connected with FusionExport Service');
-        clearTimeout(rejectionId);
-        resolve();
-      };
-
-      rejectionId = setTimeout(() => {
-        const errorMsg = 'Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command';
-        reject(new Error(errorMsg));
-        this.client.removeEventListener('open', onOpenListener);
-      }, 2000);
-
-      this.client.on('open', onOpenListener);
-    });
-  }
-
-  registerOnErrorListener() {
-    this.client.on('error', (e) => {
-      if (e.code === 'ECONNREFUSED') {
-        const errorMsg = 'Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command';
-        this.emit('error', errorMsg);
-      } else {
-        this.emit('error', e.message);
+      if (formData.payload) {
+        formData.payload = fs.createReadStream(formData.payload);
       }
-      this.client.close();
-    });
-  }
 
-  registerOnEndListener() {
-    this.client.on('close', (status) => {
-      if (!status) {
-        logger.info('disconnected with FusionExport Service');
-      }
-    });
-  }
-
-  registerOnDataRecievedListener() {
-    this.client.on('message', (data) => {
-      const outputData = data.toString();
-      if (outputData) {
-        if (outputData.startsWith(EXPORT_DATA)) {
-          if (!this.isError) {
-            this.outputData = outputData.substr(EXPORT_DATA.length);
-            this.emit('exportDone', ExportManager.parseExportedData(this.outputData).data);
-            this.client.close();
-          }
+      request.post({
+        url: this.config.url,
+        encoding: null,
+        formData,
+      }, (err, httpResponse, body) => {
+        if (err) {
+          reject(err);
+          return;
         }
-        if (outputData.startsWith(EXPORT_EVENT)) {
-          const meta = JSON.parse(outputData.substr(EXPORT_EVENT.length));
-          this.emit('exportStateChange', meta);
-        }
-      }
-    });
-  }
-
-  static parseExportedData(data) {
-    return JSON.parse(data);
-  }
-
-  export(exportConfig) {
-    return new Promise((resolve, reject) => {
-      if (!(exportConfig instanceof ExportConfig)) {
-        const err = new Error('Not an instance of ExportConfig class');
-        this.emit('error', err);
-        reject(err);
-      }
-      if (typeof this.clientName !== 'undefined') {
-        /* eslint-disable no-param-reassign */
-        exportConfig.clientName = this.clientName;
-        /* eslint-enable */
-      }
-      this.connect().then(() => {
-        this.emitData('ExportManager', 'export', exportConfig);
-        let cyclesCount = 0;
-        const cycleStep = 10;
-        const MAX_WAIT_TIME = this.config.max_wait_sec * 1000;
-        const TOTAL_ALLOWED_CYCLES = MAX_WAIT_TIME / cycleStep;
-        const tmtId = setInterval(() => {
-          cyclesCount += 1;
-          if (this.outputData) {
-            clearInterval(tmtId);
-            const outputFinalData = ExportManager.parseExportedData(this.outputData).data;
-            resolve(outputFinalData);
-          }
-          if (TOTAL_ALLOWED_CYCLES === cyclesCount) {
-            const errorMsg = `Wait timeout reached. Waited for ${this.config.max_wait_sec} seconds`;
-            reject(new Error(errorMsg));
-            this.emit('error', errorMsg);
-            this.isError = true;
-          }
-        }, cycleStep);
-      }).catch((err) => {
-        this.emit('error', err.toString());
+        const zipFile = ExportManager.saveZip(body);
+        resolve(ExportManager.saveExportedFiles(zipFile, dirPath, unzip));
       });
     });
   }
 
-  static saveExportedFiles(exportedOutput, dirPath = '.') {
-    if (!exportedOutput) {
-      throw new Error('Exported Output files are missing');
-    }
-    fs.ensureDirSync(dirPath);
-    exportedOutput.forEach((item) => {
-      const filePath = path.join(dirPath, item.realName);
-      const data = Buffer.from(item.fileContent, 'base64');
-      fs.outputFileSync(filePath, data);
-    });
+  static saveZip(content) {
+    const zipFile = tmp.fileSync({ postfix: '.zip' });
+    fs.writeFileSync(zipFile.name, content);
+    return zipFile.name;
   }
 
-  static getExportedFileNames(exportedOutput) {
-    if (!exportedOutput) {
-      throw new Error('Exported Output files are missing');
+  static saveExportedFiles(exportedFile, dirPath = '.', unzip = false) {
+    if (!exportedFile) {
+      throw new Error('Exported files are missing');
     }
-    const fileNames = exportedOutput.data.map(item => item.realName);
-    return fileNames;
+
+    fs.ensureDirSync(dirPath);
+
+    const savedFiles = [];
+
+    if (unzip) {
+      const zip = AdmZip(exportedFile);
+      zip.extractAllTo(dirPath, true);
+      const extractedFiles = zip.getEntries().map(entry => path.resolve(dirPath, entry.entryName));
+      savedFiles.push(...extractedFiles);
+    } else {
+      const filename = 'fusioncharts-export.zip';
+      const savedFile = path.resolve(dirPath, filename);
+      fs.copySync(exportedFile, savedFile);
+      savedFiles.push(savedFile);
+    }
+
+    return savedFiles;
   }
 }
 

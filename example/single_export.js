@@ -14,8 +14,8 @@ const exportConfig = new ExportConfig();
 exportConfig.set('chartConfig', path.join(__dirname, 'resources', 'single.json'));
 
 // provide the export config
-exportManager.export(exportConfig).then((exportedFile) => {
-  ExportManager.saveExportedFiles(exportedFile, '.', true);
+exportManager.export(exportConfig, '.', true).then((exportedFiles) => {
+  exportedFiles.forEach(file => console.log(file));
 }).catch((err) => {
   console.log(err);
 });

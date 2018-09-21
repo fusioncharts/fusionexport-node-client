@@ -15,8 +15,8 @@ exportConfig.set('chartConfig', path.join(__dirname, 'resources', 'multiple.json
 exportConfig.set('outputFile', 'export-<%= number(5) %>');
 
 // provide the export config
-exportManager.export(exportConfig).then((exportedFile) => {
-  ExportManager.saveExportedFiles(exportedFile, '.');
+exportManager.export(exportConfig, '.').then((exportedFiles) => {
+  exportedFiles.forEach(file => console.log(file));
 }).catch((err) => {
   console.log(err);
 });

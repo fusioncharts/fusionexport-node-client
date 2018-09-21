@@ -18,8 +18,8 @@ exportConfig.set('dashboardHeading', 'FusionCharts');
 exportConfig.set('dashboardSubheading', 'The best charting library in the world');
 
 // provide the export config
-exportManager.export(exportConfig).then((exportedFile) => {
-  ExportManager.saveExportedFiles(exportedFile, '.', true);
+exportManager.export(exportConfig, '.', true).then((exportedFiles) => {
+  exportedFiles.forEach(file => console.log(file));
 }).catch((err) => {
   console.log(err);
 });

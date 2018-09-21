@@ -16,8 +16,8 @@ exportConfig.set('templateFilePath', path.join(__dirname, 'resources', 'template
 exportConfig.set('callbackFilePath', path.join(__dirname, 'resources', 'callback.js'));
 
 // provide the export config
-exportManager.export(exportConfig).then((exportedFile) => {
-  ExportManager.saveExportedFiles(exportedFile, '.', true);
+exportManager.export(exportConfig, '.', true).then((exportedFiles) => {
+  exportedFiles.forEach(file => console.log(file));
 }).catch((err) => {
   console.log(err);
 });

@@ -15,7 +15,7 @@ class ExportManager extends EventEmitter {
     this.config.url = `http://${this.config.host}:${this.config.port}/api/v2.0/export`;
   }
 
-  export(exportConfig) {
+  export(exportConfig, dirPath = '.', unzip = false) {
     return new Promise((resolve, reject) => {
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
 
@@ -32,9 +32,8 @@ class ExportManager extends EventEmitter {
           reject(err);
           return;
         }
-
         const zipFile = ExportManager.saveZip(body);
-        resolve(zipFile);
+        resolve(ExportManager.saveExportedFiles(zipFile, dirPath, unzip));
       });
     });
   }
@@ -49,14 +48,24 @@ class ExportManager extends EventEmitter {
     if (!exportedFile) {
       throw new Error('Exported files are missing');
     }
+
     fs.ensureDirSync(dirPath);
+
+    const savedFiles = [];
+
     if (unzip) {
       const zip = AdmZip(exportedFile);
       zip.extractAllTo(dirPath, true);
+      const extractedFiles = zip.getEntries().map(entry => path.resolve(dirPath, entry.entryName));
+      savedFiles.push(...extractedFiles);
     } else {
       const filename = 'fusioncharts-export.zip';
-      fs.copySync(exportedFile, path.join(dirPath, filename));
+      const savedFile = path.resolve(dirPath, filename);
+      fs.copySync(exportedFile, savedFile);
+      savedFiles.push(savedFile);
     }
+
+    return savedFiles;
   }
 }
 

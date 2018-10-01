@@ -16,23 +16,8 @@ exportConfig.set('templateFilePath', path.join(__dirname, 'resources', 'template
 exportConfig.set('callbackFilePath', path.join(__dirname, 'resources', 'callback.js'));
 
 // provide the export config
-exportManager.export(exportConfig);
-
-// Called when export is done
-exportManager.on('exportDone', (outputFileBag) => {
-  outputFileBag.forEach((op) => {
-    console.log(`DONE: ${op.realName}`);
-  });
-
-  ExportManager.saveExportedFiles(outputFileBag);
-});
-
-// Called on each export state change
-exportManager.on('exportStateChange', (state) => {
-  console.log(`[${state.reporter}] ${state.customMsg}`);
-});
-
-// Called on erroe
-exportManager.on('error', (err) => {
-  console.error(err);
+exportManager.export(exportConfig, '.', true).then((exportedFiles) => {
+  exportedFiles.forEach(file => console.log(file));
+}).catch((err) => {
+  console.log(err);
 });

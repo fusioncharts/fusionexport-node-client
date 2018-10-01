@@ -1,4 +1,4 @@
-// Export in Bulk
+// Google Chart export
 
 const path = require('path');
 
@@ -11,8 +11,9 @@ const exportManager = new ExportManager();
 // Instantiate ExportConfig and add the required configurations
 const exportConfig = new ExportConfig();
 
-exportConfig.set('chartConfig', path.join(__dirname, 'resources', 'multiple.json'));
-exportConfig.set('outputFile', 'export-<%= number(5) %>');
+exportConfig.set('templateFilePath', path.join(__dirname, 'resources', 'template_googlecharts.html'));
+exportConfig.set('type', 'jpg');
+exportConfig.set('asyncCapture', true);
 
 // provide the export config
 exportManager.export(exportConfig, '.', true).then((exportedFiles) => {

@@ -32,6 +32,12 @@ class ExportManager extends EventEmitter {
           reject(err);
           return;
         }
+
+        if (httpResponse.statusCode !== 200) {
+          reject(new Error(body.toString()));
+          return;
+        }
+
         const zipFile = ExportManager.saveZip(body);
         resolve(ExportManager.saveExportedFiles(zipFile, dirPath, unzip));
       });

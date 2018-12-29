@@ -24,6 +24,7 @@ const mapMetadataTypeNameToJSValue = {
   string: '',
   boolean: true,
   integer: 1,
+  enum: '',
 };
 
 function booleanConverter(value) {
@@ -67,9 +68,18 @@ function numberConverter(value) {
   throw Error("Couldn't convert to number");
 }
 
+function enumConverter(value, dataset) {
+  if (!dataset.includes(value)) {
+    throw Error(`${value} is not in supported set`);
+  }
+
+  return value;
+}
+
 const mapConverterNameToConverter = {
   BooleanConverter: booleanConverter,
   NumberConverter: numberConverter,
+  EnumConverter: enumConverter,
 };
 
 const CHARTCONFIG = 'chartConfig';
@@ -115,12 +125,12 @@ class ExportConfig {
       throw new Error(`${configName} is not allowed`);
     }
 
-    reqdTyping.converter = reqdTyping.converter || '';
-    const converterName = reqdTyping.converter.toLowerCase();
+    const converterName = reqdTyping.converter || '';
     const converterFunction = mapConverterNameToConverter[converterName];
+    const { dataset } = reqdTyping;
 
     if (converterFunction !== undefined) {
-      return converterFunction(configValue);
+      return converterFunction(configValue, dataset);
     }
     return configValue;
   }

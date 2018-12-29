@@ -8,6 +8,34 @@
     "templateFilePath": {
         "type": "string"
     },
+    "templateURL": {
+        "type": "string"
+    },
+    "templateWidth": {
+        "type": "integer",
+        "converter": "NumberConverter"
+    },
+    "templateHeight": {
+        "type": "integer",
+        "converter": "NumberConverter"
+    },
+    "templateFormat": {
+        "type": "enum",
+        "converter": "EnumConverter",
+        "dataset": [
+            "Letter",
+            "Legal",
+            "Tabloid",
+            "Ledger",
+            "A0",
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6"
+        ]
+    },
     "callbackFilePath": {
         "type": "string"
     },

@@ -1,6 +1,7 @@
 {
     "chartConfig": {
-        "type": "string"
+        "type": "string",
+        "converter": "ChartConfigConverter"
     },
     "inputSVG": {
         "type": "string"

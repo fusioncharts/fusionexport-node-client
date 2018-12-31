@@ -76,10 +76,19 @@ function enumConverter(value, dataset) {
   return value;
 }
 
+function chartConfigConverter(value) {
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return value;
+}
+
 const mapConverterNameToConverter = {
   BooleanConverter: booleanConverter,
   NumberConverter: numberConverter,
   EnumConverter: enumConverter,
+  ChartConfigConverter: chartConfigConverter,
 };
 
 const CHARTCONFIG = 'chartConfig';
@@ -212,15 +221,14 @@ class ExportConfig {
     const zipBag = [];
 
     if (clonedObj.has(CHARTCONFIG)) {
-      const oldValue = clonedObj.get(CHARTCONFIG);
+      const chartConfigVal = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
 
-      let newValue = oldValue;
-      if (oldValue.endsWith('.json')) {
-        newValue = readFileContent(oldValue, false);
+      if (chartConfigVal.endsWith('.json')) {
+        this.set(CHARTCONFIG, readFileContent(chartConfigVal, false));
       }
 
-      clonedObj.set(CHARTCONFIG, newValue);
+      clonedObj.set(CHARTCONFIG, this.get(CHARTCONFIG));
     }
 
     if (clonedObj.has(INPUTSVG)) {
@@ -273,9 +281,16 @@ class ExportConfig {
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const { zipPaths, templatePathWithinZip } = clonedObj.createTemplateZipPaths();
-      clonedObj.set(TEMPLATE, templatePathWithinZip);
+      const templateVal = clonedObj.get(TEMPLATE);
+      clonedObj.remove(TEMPLATE);
+
+      if (templateVal.startsWith('<') && templateVal.endsWith('>')) {
+        this.set(TEMPLATE, this.saveSerializedTemlateToFile());
+      }
+
+      const { zipPaths, templatePathWithinZip } = this.createTemplateZipPaths();
       zipBag.push(...zipPaths);
+      clonedObj.set(TEMPLATE, templatePathWithinZip);
     }
 
     if (clonedObj.has(ASYNCCAPTURE)) {
@@ -320,6 +335,13 @@ class ExportConfig {
     }, {});
 
     return processedObj;
+  }
+
+  saveSerializedTemlateToFile() {
+    const template = this.get(TEMPLATE);
+    const tmpFile = tmp.fileSync({ postfix: '.html' });
+    fs.writeFileSync(tmpFile.name, template);
+    return tmpFile.name;
   }
 
   createTemplateZipPaths() {

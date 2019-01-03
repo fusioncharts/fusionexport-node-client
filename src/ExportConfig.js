@@ -36,7 +36,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
     const numberValue = value;
     if (numberValue === 1) {
       return true;
@@ -60,7 +60,7 @@ function numberConverter(value) {
       return numberValue;
     }
     throw Error("Couldn't convert to number");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
     const numberValue = value;
     return numberValue;
   }

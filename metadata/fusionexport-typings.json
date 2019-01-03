@@ -9,9 +9,6 @@
     "templateFilePath": {
         "type": "string"
     },
-    "templateURL": {
-        "type": "string"
-    },
     "templateWidth": {
         "type": "integer",
         "converter": "NumberConverter"

@@ -24,6 +24,7 @@ const mapMetadataTypeNameToJSValue = {
   string: '',
   boolean: true,
   integer: 1,
+  enum: '',
 };
 
 function booleanConverter(value) {
@@ -35,7 +36,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
     const numberValue = value;
     if (numberValue === 1) {
       return true;
@@ -59,7 +60,7 @@ function numberConverter(value) {
       return numberValue;
     }
     throw Error("Couldn't convert to number");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
     const numberValue = value;
     return numberValue;
   }
@@ -67,9 +68,27 @@ function numberConverter(value) {
   throw Error("Couldn't convert to number");
 }
 
+function enumConverter(value, dataset) {
+  if (!dataset.includes(value)) {
+    throw Error(`${value} is not in supported set`);
+  }
+
+  return value;
+}
+
+function chartConfigConverter(value) {
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return value;
+}
+
 const mapConverterNameToConverter = {
   BooleanConverter: booleanConverter,
   NumberConverter: numberConverter,
+  EnumConverter: enumConverter,
+  ChartConfigConverter: chartConfigConverter,
 };
 
 const CHARTCONFIG = 'chartConfig';
@@ -115,12 +134,12 @@ class ExportConfig {
       throw new Error(`${configName} is not allowed`);
     }
 
-    reqdTyping.converter = reqdTyping.converter || '';
-    const converterName = reqdTyping.converter.toLowerCase();
+    const converterName = reqdTyping.converter || '';
     const converterFunction = mapConverterNameToConverter[converterName];
+    const { dataset } = reqdTyping;
 
     if (converterFunction !== undefined) {
-      return converterFunction(configValue);
+      return converterFunction(configValue, dataset);
     }
     return configValue;
   }
@@ -202,15 +221,14 @@ class ExportConfig {
     const zipBag = [];
 
     if (clonedObj.has(CHARTCONFIG)) {
-      const oldValue = clonedObj.get(CHARTCONFIG);
+      const chartConfigVal = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
 
-      let newValue = oldValue;
-      if (oldValue.endsWith('.json')) {
-        newValue = readFileContent(oldValue, false);
+      if (chartConfigVal.endsWith('.json')) {
+        this.set(CHARTCONFIG, readFileContent(chartConfigVal, false));
       }
 
-      clonedObj.set(CHARTCONFIG, newValue);
+      clonedObj.set(CHARTCONFIG, this.get(CHARTCONFIG));
     }
 
     if (clonedObj.has(INPUTSVG)) {
@@ -263,9 +281,16 @@ class ExportConfig {
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const { zipPaths, templatePathWithinZip } = clonedObj.createTemplateZipPaths();
-      clonedObj.set(TEMPLATE, templatePathWithinZip);
+      const templateVal = clonedObj.get(TEMPLATE);
+      clonedObj.remove(TEMPLATE);
+
+      if (templateVal.startsWith('<') && templateVal.endsWith('>')) {
+        this.set(TEMPLATE, this.saveSerializedTemlateToFile());
+      }
+
+      const { zipPaths, templatePathWithinZip } = this.createTemplateZipPaths();
       zipBag.push(...zipPaths);
+      clonedObj.set(TEMPLATE, templatePathWithinZip);
     }
 
     if (clonedObj.has(ASYNCCAPTURE)) {
@@ -310,6 +335,13 @@ class ExportConfig {
     }, {});
 
     return processedObj;
+  }
+
+  saveSerializedTemlateToFile() {
+    const template = this.get(TEMPLATE);
+    const tmpFile = tmp.fileSync({ postfix: '.html' });
+    fs.writeFileSync(tmpFile.name, template);
+    return tmpFile.name;
   }
 
   createTemplateZipPaths() {

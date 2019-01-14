@@ -469,10 +469,20 @@ class ExportConfig {
     });
   }
 
+  static filterNEFiles(fileBag) {
+    return fileBag.filter((file) => {
+      if (fs.existsSync(file.externalPath)) return true;
+      console.warn(`File not found: ${file.externalPath}. Ignoring file.`);
+      return false;
+    });
+  }
+
   static generateZip(fileBag) {
     const zip = new AdmZip();
 
-    fileBag.forEach((file) => {
+    const _fileBag = ExportConfig.filterNEFiles(fileBag);
+
+    _fileBag.forEach((file) => {
       const internalDir = path.dirname(file.internalPath);
       const internalName = path.basename(file.internalPath);
       zip.addLocalFile(file.externalPath, internalDir, internalName);

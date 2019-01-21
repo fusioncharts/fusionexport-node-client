@@ -72,14 +72,17 @@ function numberConverter(value) {
 }
 
 function enumConverter(value, dataset) {
-  if (!dataset.includes(value)) {
+  const lowerCasedDataset = dataset.map(d => d.toLowerCase());
+  const lowerCasedValue = value.toLowerCase();
+
+  if (!lowerCasedDataset.includes(lowerCasedValue)) {
     const enumParseError = new Error(`${value} is not in supported set. Supported values are ${humanizeArray(dataset)}`);
     enumParseError.name = 'Enum Parse Error';
     enumParseError.dataset = dataset;
     throw enumParseError;
   }
 
-  return value;
+  return lowerCasedValue;
 }
 
 function chartConfigConverter(value) {
@@ -391,6 +394,10 @@ class ExportConfig {
 
       return obj;
     }, {});
+
+    if (!!processedObj.templateFormat && processedObj.type !== 'pdf') {
+      console.warn('templateFormat is not supported for types other than PDF. It will be ignored.');
+    }
 
     return processedObj;
   }

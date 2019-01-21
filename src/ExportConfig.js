@@ -14,6 +14,7 @@ const {
   isLocalResource,
   readFileContent,
   diffArrays,
+  humanizeArray,
 } = require('./utils');
 
 const metadataFolderPath = path.join(__dirname, '../metadata');
@@ -24,7 +25,9 @@ const mapMetadataTypeNameToJSValue = {
   string: '',
   boolean: true,
   integer: 1,
+  object: {},
   enum: '',
+  file: '',
 };
 
 function booleanConverter(value) {
@@ -70,7 +73,10 @@ function numberConverter(value) {
 
 function enumConverter(value, dataset) {
   if (!dataset.includes(value)) {
-    throw Error(`${value} is not in supported set`);
+    const enumParseError = new Error(`${value} is not in supported set. Supported values are ${humanizeArray(dataset)}`);
+    enumParseError.name = 'Enum Parse Error';
+    enumParseError.dataset = dataset;
+    throw enumParseError;
   }
 
   return value;
@@ -119,6 +125,7 @@ class ExportConfig {
     }
 
     if (!this.disableTypeCheck) {
+      this.checkInputTypings(configName, configValue);
       configValue = this.tryConvertType(configName, configValue);
       this.checkTypings(configName, configValue);
     }
@@ -127,11 +134,39 @@ class ExportConfig {
     return this;
   }
 
+  checkInputTypings(configName, configValue) {
+    const reqdTyping = this.typings[configName];
+
+    if (!reqdTyping) {
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration Error';
+      throw invalidConfigError;
+    }
+
+    const isSupported = reqdTyping.supportedTypes.some((type) => {
+      const valOfType = mapMetadataTypeNameToJSValue[type];
+
+      if (typeof valOfType === typeof configValue) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!isSupported) {
+      const invalidDataTypeError = new Error(`${configName} of type ${typeof configValue} is unsupported. Supported data types are ${humanizeArray(reqdTyping.supportedTypes)}.`);
+      invalidDataTypeError.name = 'Invalid Data Type';
+      throw invalidDataTypeError;
+    }
+  }
+
   tryConvertType(configName, configValue) {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
-      throw new Error(`${configName} is not allowed`);
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration Error';
+      throw invalidConfigError;
     }
 
     const converterName = reqdTyping.converter || '';
@@ -141,6 +176,7 @@ class ExportConfig {
     if (converterFunction !== undefined) {
       return converterFunction(configValue, dataset);
     }
+
     return configValue;
   }
 
@@ -148,7 +184,9 @@ class ExportConfig {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
-      throw new Error(`${configName} is not allowed`);
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration Error';
+      throw invalidConfigError;
     }
 
     const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
@@ -311,7 +349,21 @@ class ExportConfig {
   }
 
   getFormattedConfigs() {
-    const clonedObj = this.cloneWithProcessedProperties();
+    let clonedObj = {};
+
+    try {
+      clonedObj = this.cloneWithProcessedProperties();
+    } catch (e) {
+      if (e.code === 'ENOENT' && !!e.path) {
+        const fileNotFoundError = new Error(`The file '${e.path}' which you have provided does not exist. Please provide a valid file.`);
+        fileNotFoundError.name = 'File Not Found';
+        fileNotFoundError.path = e.path;
+
+        throw fileNotFoundError;
+      }
+
+      throw e;
+    }
 
     const { typings } = clonedObj;
 

@@ -14,6 +14,7 @@ const {
   isLocalResource,
   readFileContent,
   diffArrays,
+  humanizeArray,
 } = require('./utils');
 
 const metadataFolderPath = path.join(__dirname, '../metadata');
@@ -70,7 +71,10 @@ function numberConverter(value) {
 
 function enumConverter(value, dataset) {
   if (!dataset.includes(value)) {
-    throw Error(`${value} is not in supported set`);
+    const enumParseError = new Error(`${value} is not in supported set. Supported values are ${humanizeArray(dataset)}`);
+    enumParseError.name = 'Enum Parse Error';
+    enumParseError.dataset = dataset;
+    throw enumParseError;
   }
 
   return value;

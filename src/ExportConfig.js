@@ -25,7 +25,9 @@ const mapMetadataTypeNameToJSValue = {
   string: '',
   boolean: true,
   integer: 1,
+  object: {},
   enum: '',
+  file: '',
 };
 
 function booleanConverter(value) {
@@ -123,12 +125,39 @@ class ExportConfig {
     }
 
     if (!this.disableTypeCheck) {
+      this.checkInputTypings(configName, configValue);
       configValue = this.tryConvertType(configName, configValue);
       this.checkTypings(configName, configValue);
     }
     this.configs.set(configName, configValue);
 
     return this;
+  }
+
+  checkInputTypings(configName, configValue) {
+    const reqdTyping = this.typings[configName];
+
+    if (!reqdTyping) {
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration Error';
+      throw invalidConfigError;
+    }
+
+    const isSupported = reqdTyping.supportedTypes.some((type) => {
+      const valOfType = mapMetadataTypeNameToJSValue[type];
+
+      if (typeof valOfType === typeof configValue) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!isSupported) {
+      const invalidDataTypeError = new Error(`${configName} of type ${typeof configValue} is unsupported. Supported data types are ${humanizeArray(reqdTyping.supportedTypes)}.`);
+      invalidDataTypeError.name = 'Invalid Data Type';
+      throw invalidDataTypeError;
+    }
   }
 
   tryConvertType(configName, configValue) {
@@ -145,6 +174,7 @@ class ExportConfig {
     if (converterFunction !== undefined) {
       return converterFunction(configValue, dataset);
     }
+
     return configValue;
   }
 

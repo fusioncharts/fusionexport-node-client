@@ -71,6 +71,10 @@ function diffArrays(fullArray, excludeArray) {
 function humanizeArray(arr) {
   if (!Array.isArray(arr)) return '';
 
+  if (arr.length === 1) {
+    return arr[0];
+  }
+
   let str = arr.slice(0, -1).join(', ');
   str += ` and ${arr.slice(-1)}`;
   return str;

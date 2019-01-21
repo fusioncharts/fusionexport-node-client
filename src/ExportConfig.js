@@ -164,7 +164,9 @@ class ExportConfig {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
-      throw new Error(`${configName} is not allowed`);
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration Error';
+      throw invalidConfigError;
     }
 
     const converterName = reqdTyping.converter || '';
@@ -182,7 +184,9 @@ class ExportConfig {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
-      throw new Error(`${configName} is not allowed`);
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration Error';
+      throw invalidConfigError;
     }
 
     const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];

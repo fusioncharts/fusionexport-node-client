@@ -311,7 +311,21 @@ class ExportConfig {
   }
 
   getFormattedConfigs() {
-    const clonedObj = this.cloneWithProcessedProperties();
+    let clonedObj = {};
+
+    try {
+      clonedObj = this.cloneWithProcessedProperties();
+    } catch (e) {
+      if (e.code === 'ENOENT' && !!e.path) {
+        const fileNotFoundError = new Error(`The file '${e.path}' which you have provided does not exist. Please provide a valid file.`);
+        fileNotFoundError.name = 'File Not Found';
+        fileNotFoundError.path = e.path;
+
+        throw fileNotFoundError;
+      }
+
+      throw e;
+    }
 
     const { typings } = clonedObj;
 

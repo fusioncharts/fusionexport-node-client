@@ -84,6 +84,12 @@ function enumConverter(value, dataset) {
 
 function chartConfigConverter(value) {
   if (typeof value === 'object') {
+    if (!value.dataSource || !value.type) {
+      const invalidJSONError = new Error('JSON structure is invalid. Please check your JSON data.');
+      invalidJSONError.name = 'Invalid JSON';
+      throw invalidJSONError;
+    }
+
     return JSON.stringify(value);
   }
 

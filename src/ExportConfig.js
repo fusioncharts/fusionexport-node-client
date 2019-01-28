@@ -262,6 +262,11 @@ class ExportConfig {
     const clonedObj = _.cloneDeep(this);
     clonedObj.disableTypeCheck = true;
 
+    if (clonedObj.get('templateFilePath') && clonedObj.get('template')) {
+      console.warn('Both \'templateFilePath\' and \'template\' is provided. \'templateFilePath\' will be ignored.');
+      clonedObj.remove('templateFilePath');
+    }
+
     clonedObj.set(CLIENTNAME, this.clientName);
     clonedObj.set(PLATFORM, os.platform());
 
@@ -328,12 +333,12 @@ class ExportConfig {
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const templateVal = clonedObj.get(TEMPLATE);
+      // const templateVal = clonedObj.get(TEMPLATE);
       clonedObj.remove(TEMPLATE);
 
-      if (templateVal.startsWith('<') && templateVal.endsWith('>')) {
-        this.set(TEMPLATE, this.saveSerializedTemlateToFile());
-      }
+      // if (templateVal.startsWith('<') && templateVal.endsWith('>')) {
+      //   this.set(TEMPLATE, this.saveSerializedTemlateToFile());
+      // }
 
       const { zipPaths, templatePathWithinZip } = this.createTemplateZipPaths();
       zipBag.push(...zipPaths);
@@ -402,12 +407,12 @@ class ExportConfig {
     return processedObj;
   }
 
-  saveSerializedTemlateToFile() {
-    const template = this.get(TEMPLATE);
-    const tmpFile = tmp.fileSync({ postfix: '.html' });
-    fs.writeFileSync(tmpFile.name, template);
-    return tmpFile.name;
-  }
+  // saveSerializedTemlateToFile() {
+  //   const template = this.get(TEMPLATE);
+  //   const tmpFile = tmp.fileSync({ postfix: '.html' });
+  //   fs.writeFileSync(tmpFile.name, template);
+  //   return tmpFile.name;
+  // }
 
   createTemplateZipPaths() {
     const listExtractedPaths = this.findResources();

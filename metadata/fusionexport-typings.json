@@ -8,9 +8,13 @@
         "type": "string",
         "supportedTypes": ["file"]
     },
+    "template": {
+        "type": "string",
+        "supportedTypes": ["string"]
+    },
     "templateFilePath": {
         "type": "string",
-        "supportedTypes": ["string", "file"]
+        "supportedTypes": ["file"]
     },
     "templateWidth": {
         "type": "integer",

@@ -275,9 +275,6 @@ class ExportConfig {
       clonedObj.remove('templateFilePath');
     }
 
-    clonedObj.set(CLIENTNAME, this.clientName);
-    clonedObj.set(PLATFORM, os.platform());
-
     const zipBag = [];
 
     if (clonedObj.has(CHARTCONFIG)) {
@@ -344,10 +341,6 @@ class ExportConfig {
       // const templateVal = clonedObj.get(TEMPLATE);
       clonedObj.remove(TEMPLATE);
 
-      // if (templateVal.startsWith('<') && templateVal.endsWith('>')) {
-      //   this.set(TEMPLATE, this.saveSerializedTemlateToFile());
-      // }
-
       const { zipPaths, templatePathWithinZip } = this.createTemplateZipPaths();
       zipBag.push(...zipPaths);
       clonedObj.set(TEMPLATE, templatePathWithinZip);
@@ -412,15 +405,11 @@ class ExportConfig {
       console.warn('templateFormat is not supported for types other than PDF. It will be ignored.');
     }
 
+    processedObj[CLIENTNAME] = this.clientName;
+    processedObj[PLATFORM] = os.platform();
+
     return processedObj;
   }
-
-  // saveSerializedTemlateToFile() {
-  //   const template = this.get(TEMPLATE);
-  //   const tmpFile = tmp.fileSync({ postfix: '.html' });
-  //   fs.writeFileSync(tmpFile.name, template);
-  //   return tmpFile.name;
-  // }
 
   createTemplateZipPaths() {
     const listExtractedPaths = this.findResources();

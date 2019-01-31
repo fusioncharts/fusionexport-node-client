@@ -87,13 +87,21 @@ function enumConverter(value, dataset) {
 
 function chartConfigConverter(value) {
   if (typeof value === 'object') {
-    if (!value.dataSource || !value.type) {
-      const invalidJSONError = new Error('JSON structure is invalid. Please check your JSON data.');
-      invalidJSONError.name = 'Invalid JSON';
-      throw invalidJSONError;
+    let configList = value;
+
+    if (!Array.isArray(value)) {
+      configList = [value];
     }
 
-    return JSON.stringify(value);
+    configList.forEach((config) => {
+      if (!config.dataSource || !config.type) {
+        const invalidJSONError = new Error('JSON structure is invalid. Please check your JSON data.');
+        invalidJSONError.name = 'Invalid JSON';
+        throw invalidJSONError;
+      }
+    });
+
+    return JSON.stringify(configList);
   }
 
   return value;

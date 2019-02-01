@@ -156,7 +156,7 @@ class ExportConfig {
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = 'Invalid Configuration Error';
+      invalidConfigError.name = 'Invalid Configuration';
       throw invalidConfigError;
     }
 
@@ -182,7 +182,7 @@ class ExportConfig {
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = 'Invalid Configuration Error';
+      invalidConfigError.name = 'Invalid Configuration';
       throw invalidConfigError;
     }
 
@@ -202,7 +202,7 @@ class ExportConfig {
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = 'Invalid Configuration Error';
+      invalidConfigError.name = 'Invalid Configuration';
       throw invalidConfigError;
     }
 

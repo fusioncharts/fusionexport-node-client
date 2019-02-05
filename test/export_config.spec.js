@@ -44,8 +44,35 @@ describe('ExportConfig', () => {
       it('should not take boolean', () => {
         const exampleConfig = true;
         const errorName = 'Invalid Data Type';
-        const errorMsg = /^chartConfig of type boolean is unsupported\. Supported data types are string, object and file\.$/;
+        const errorMsg = 'chartConfig of type boolean is unsupported.';
         expect(() => exportConfig.set('chartConfig', exampleConfig))
+          .to.throw(errorMsg)
+          .with.property('name', errorName);
+      });
+    });
+
+    describe('templateFilePath', () => {
+      it('should take file path', () => {
+        const exampleTemplateFilePath = path.join(__dirname, '..', 'example', 'resources', 'template.html');
+        exportConfig.set('templateFilePath', exampleTemplateFilePath);
+        expect(exportConfig.get('templateFilePath')).to.equal(exampleTemplateFilePath);
+      });
+
+      it('should not take invalid file path', () => {
+        const invalidTemplateFilePath = path.join(__dirname, '..', 'example', 'resources', 'non_existent_template.html');
+        exportConfig.set('templateFilePath', invalidTemplateFilePath);
+        const errorName = 'File Not Found';
+        const errorMsg = `The file '${invalidTemplateFilePath}' which you have provided does not exist. Please provide a valid file.`;
+        expect(() => exportConfig.getFormattedConfigs())
+          .to.throw(errorMsg)
+          .with.property('name', errorName);
+      });
+
+      it('should not take boolean', () => {
+        const exampleConfig = true;
+        const errorName = 'Invalid Data Type';
+        const errorMsg = 'templateFilePath of type boolean is unsupported.';
+        expect(() => exportConfig.set('templateFilePath', exampleConfig))
           .to.throw(errorMsg)
           .with.property('name', errorName);
       });
@@ -67,18 +94,18 @@ describe('ExportConfig', () => {
 
       it('should not take invalid number as string', () => {
         const exampleTemplateWidthString = 'notanumber';
-        expect(() => exportConfig.set('templateWidth', exampleTemplateWidthString)).to.throw(/^Couldn't convert to number$/);
+        expect(() => exportConfig.set('templateWidth', exampleTemplateWidthString)).to.throw('Couldn\'t convert to number');
       });
     });
 
     describe('templateFormat', () => {
-      it('should take valid string', () => {
+      it('should take valid enum string', () => {
         const exampleTemplateFormat = 'A4';
         exportConfig.set('templateFormat', exampleTemplateFormat);
         expect(exportConfig.get('templateFormat')).to.equal(exampleTemplateFormat.toLowerCase());
       });
 
-      it('should not take invalid string', () => {
+      it('should not take invalid enum string', () => {
         const invalidTemplateFormat = 'AB4';
         expect(() => exportConfig.set('templateFormat', invalidTemplateFormat))
           .to.throw('AB4 is not in supported set.')
@@ -107,7 +134,7 @@ describe('ExportConfig', () => {
 
       it('should not parse invalid string', () => {
         const invalidBoolean = 'invalidBoolean';
-        expect(() => exportConfig.set('asyncCapture', invalidBoolean)).to.throw(/^Couldn't convert to boolean$/);
+        expect(() => exportConfig.set('asyncCapture', invalidBoolean)).to.throw('Couldn\'t convert to boolean');
       });
     });
   });

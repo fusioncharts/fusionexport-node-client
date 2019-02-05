@@ -50,18 +50,77 @@ describe('ExportConfig', () => {
           .with.property('name', errorName);
       });
     });
+
+    describe('templateWidth', () => {
+      it('should take number', () => {
+        const exampleTemplateWidth = 500;
+        exportConfig.set('templateWidth', exampleTemplateWidth);
+        expect(exportConfig.get('templateWidth')).to.equal(exampleTemplateWidth);
+      });
+
+      it('should take valid number as string', () => {
+        const exampleTemplateWidthString = '700';
+        const exampleTemplateWidthNumber = 700;
+        exportConfig.set('templateWidth', exampleTemplateWidthString);
+        expect(exportConfig.get('templateWidth')).to.equal(exampleTemplateWidthNumber);
+      });
+
+      it('should not take invalid number as string', () => {
+        const exampleTemplateWidthString = 'notanumber';
+        expect(() => exportConfig.set('templateWidth', exampleTemplateWidthString)).to.throw(/^Couldn't convert to number$/);
+      });
+    });
+
+    describe('templateFormat', () => {
+      it('should take valid string', () => {
+        const exampleTemplateFormat = 'A4';
+        exportConfig.set('templateFormat', exampleTemplateFormat);
+        expect(exportConfig.get('templateFormat')).to.equal(exampleTemplateFormat.toLowerCase());
+      });
+
+      it('should not take invalid string', () => {
+        const invalidTemplateFormat = 'AB4';
+        expect(() => exportConfig.set('templateFormat', invalidTemplateFormat))
+          .to.throw('AB4 is not in supported set.')
+          .with.property('name', 'Enum Parse Error');
+      });
+    });
+
+    describe('asyncCapture', () => {
+      it('should take boolean', () => {
+        const exampleAsyncCapture = true;
+        exportConfig.set('asyncCapture', exampleAsyncCapture);
+        expect(exportConfig.get('asyncCapture')).to.equal(exampleAsyncCapture);
+      });
+
+      it('should parse \'true\' as true', () => {
+        const trueStr = 'true';
+        exportConfig.set('asyncCapture', trueStr);
+        expect(exportConfig.get('asyncCapture')).to.equal(true);
+      });
+
+      it('should parse \'false\' as false', () => {
+        const falseStr = 'false';
+        exportConfig.set('asyncCapture', falseStr);
+        expect(exportConfig.get('asyncCapture')).to.equal(false);
+      });
+
+      it('should not parse invalid string', () => {
+        const invalidBoolean = 'invalidBoolean';
+        expect(() => exportConfig.set('asyncCapture', invalidBoolean)).to.throw(/^Couldn't convert to boolean$/);
+      });
+    });
   });
 
   describe('ExportConfig.getFormattedConfigs', () => {
+    exportConfig.clear();
+    const fmtConfig = exportConfig.getFormattedConfigs();
+
     it('should have clientName as NODE', () => {
-      exportConfig.clear();
-      const fmtConfig = exportConfig.getFormattedConfigs();
       expect(fmtConfig).to.have.property('clientName', 'NODE');
     });
 
     it('should have platform as os.platform()', () => {
-      exportConfig.clear();
-      const fmtConfig = exportConfig.getFormattedConfigs();
       expect(fmtConfig).to.have.property('platform', os.platform());
     });
   });

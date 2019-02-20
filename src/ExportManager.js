@@ -29,9 +29,37 @@ class ExportManager extends EventEmitter {
         formData,
       }, (err, httpResponse, body) => {
         if (err) {
+          if (err.code === 'ECONNREFUSED') {
+            const connRefusedError = new Error(`Unable to connect to FusionExport server. Make sure that your server is running on ${err.address}:${err.port}.`);
+            connRefusedError.name = 'Connection Refused';
+            reject(connRefusedError);
+            return;
+          }
+
           reject(err);
           return;
         }
+
+        if (httpResponse.statusCode === 500) {
+          let errMsg = body.toString();
+
+          try {
+            errMsg = JSON.parse(errMsg).error;
+          } catch (e) {
+            // continue regardless of error
+          }
+
+          const serverError = new Error(errMsg);
+          serverError.name = 'Server Error';
+          reject(serverError);
+          return;
+        }
+
+        if (httpResponse.statusCode !== 200) {
+          reject(new Error(body.toString()));
+          return;
+        }
+
         const zipFile = ExportManager.saveZip(body);
         resolve(ExportManager.saveExportedFiles(zipFile, dirPath, unzip));
       });

@@ -68,6 +68,18 @@ function diffArrays(fullArray, excludeArray) {
   return fullArray.filter(arrElement => excludeArray.indexOf(arrElement) < 0);
 }
 
+function humanizeArray(arr) {
+  if (!Array.isArray(arr)) return '';
+
+  if (arr.length === 1) {
+    return arr[0];
+  }
+
+  let str = arr.slice(0, -1).join(', ');
+  str += ` and ${arr.slice(-1)}`;
+  return str;
+}
+
 module.exports = {
   stringifyWithFunctions,
   getTempFolderName,
@@ -78,4 +90,5 @@ module.exports = {
   isLocalResource,
   readFileContent,
   diffArrays,
+  humanizeArray,
 };

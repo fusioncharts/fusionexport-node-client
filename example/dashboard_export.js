@@ -13,6 +13,7 @@ const exportConfig = new ExportConfig();
 
 exportConfig.set('chartConfig', path.join(__dirname, 'resources', 'multiple.json'));
 exportConfig.set('templateFilePath', path.join(__dirname, 'resources', 'template.html'));
+exportConfig.set('type', 'pdf');
 
 // provide the export config
 exportManager.export(exportConfig, '.', true).then((exportedFiles) => {

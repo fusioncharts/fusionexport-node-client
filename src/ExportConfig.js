@@ -14,6 +14,7 @@ const {
   isLocalResource,
   readFileContent,
   diffArrays,
+  humanizeArray,
 } = require('./utils');
 
 const metadataFolderPath = path.join(__dirname, '../metadata');
@@ -24,6 +25,9 @@ const mapMetadataTypeNameToJSValue = {
   string: '',
   boolean: true,
   integer: 1,
+  object: {},
+  enum: '',
+  file: '',
 };
 
 function booleanConverter(value) {
@@ -35,7 +39,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
     const numberValue = value;
     if (numberValue === 1) {
       return true;
@@ -59,7 +63,7 @@ function numberConverter(value) {
       return numberValue;
     }
     throw Error("Couldn't convert to number");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
     const numberValue = value;
     return numberValue;
   }
@@ -67,9 +71,47 @@ function numberConverter(value) {
   throw Error("Couldn't convert to number");
 }
 
+function enumConverter(value, dataset) {
+  const lowerCasedDataset = dataset.map(d => d.toLowerCase());
+  const lowerCasedValue = value.toLowerCase();
+
+  if (!lowerCasedDataset.includes(lowerCasedValue)) {
+    const enumParseError = new Error(`${value} is not in supported set. Supported values are ${humanizeArray(dataset)}`);
+    enumParseError.name = 'Enum Parse Error';
+    enumParseError.dataset = dataset;
+    throw enumParseError;
+  }
+
+  return lowerCasedValue;
+}
+
+function chartConfigConverter(value) {
+  if (typeof value === 'object') {
+    let configList = value;
+
+    if (!Array.isArray(value)) {
+      configList = [value];
+    }
+
+    configList.forEach((config) => {
+      if (!config.dataSource || !config.type) {
+        const invalidJSONError = new Error('JSON structure is invalid. Please check your JSON data.');
+        invalidJSONError.name = 'Invalid JSON';
+        throw invalidJSONError;
+      }
+    });
+
+    return JSON.stringify(configList);
+  }
+
+  return value;
+}
+
 const mapConverterNameToConverter = {
   BooleanConverter: booleanConverter,
   NumberConverter: numberConverter,
+  EnumConverter: enumConverter,
+  ChartConfigConverter: chartConfigConverter,
 };
 
 const CHARTCONFIG = 'chartConfig';
@@ -100,6 +142,7 @@ class ExportConfig {
     }
 
     if (!this.disableTypeCheck) {
+      this.checkInputTypings(configName, configValue);
       configValue = this.tryConvertType(configName, configValue);
       this.checkTypings(configName, configValue);
     }
@@ -108,20 +151,49 @@ class ExportConfig {
     return this;
   }
 
+  checkInputTypings(configName, configValue) {
+    const reqdTyping = this.typings[configName];
+
+    if (!reqdTyping) {
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration';
+      throw invalidConfigError;
+    }
+
+    const isSupported = reqdTyping.supportedTypes.some((type) => {
+      const valOfType = mapMetadataTypeNameToJSValue[type];
+
+      if (typeof valOfType === typeof configValue) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!isSupported) {
+      const invalidDataTypeError = new Error(`${configName} of type ${typeof configValue} is unsupported. Supported data types are ${humanizeArray(reqdTyping.supportedTypes)}.`);
+      invalidDataTypeError.name = 'Invalid Data Type';
+      throw invalidDataTypeError;
+    }
+  }
+
   tryConvertType(configName, configValue) {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
-      throw new Error(`${configName} is not allowed`);
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration';
+      throw invalidConfigError;
     }
 
-    reqdTyping.converter = reqdTyping.converter || '';
-    const converterName = reqdTyping.converter.toLowerCase();
+    const converterName = reqdTyping.converter || '';
     const converterFunction = mapConverterNameToConverter[converterName];
+    const { dataset } = reqdTyping;
 
     if (converterFunction !== undefined) {
-      return converterFunction(configValue);
+      return converterFunction(configValue, dataset);
     }
+
     return configValue;
   }
 
@@ -129,7 +201,9 @@ class ExportConfig {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
-      throw new Error(`${configName} is not allowed`);
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = 'Invalid Configuration';
+      throw invalidConfigError;
     }
 
     const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
@@ -196,21 +270,22 @@ class ExportConfig {
     const clonedObj = _.cloneDeep(this);
     clonedObj.disableTypeCheck = true;
 
-    clonedObj.set(CLIENTNAME, this.clientName);
-    clonedObj.set(PLATFORM, os.platform());
+    if (clonedObj.get('templateFilePath') && clonedObj.get('template')) {
+      console.warn('Both \'templateFilePath\' and \'template\' is provided. \'templateFilePath\' will be ignored.');
+      clonedObj.remove('templateFilePath');
+    }
 
     const zipBag = [];
 
     if (clonedObj.has(CHARTCONFIG)) {
-      const oldValue = clonedObj.get(CHARTCONFIG);
+      const chartConfigVal = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
 
-      let newValue = oldValue;
-      if (oldValue.endsWith('.json')) {
-        newValue = readFileContent(oldValue, false);
+      if (chartConfigVal.endsWith('.json')) {
+        this.set(CHARTCONFIG, readFileContent(chartConfigVal, false));
       }
 
-      clonedObj.set(CHARTCONFIG, newValue);
+      clonedObj.set(CHARTCONFIG, this.get(CHARTCONFIG));
     }
 
     if (clonedObj.has(INPUTSVG)) {
@@ -263,9 +338,12 @@ class ExportConfig {
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const { zipPaths, templatePathWithinZip } = clonedObj.createTemplateZipPaths();
-      clonedObj.set(TEMPLATE, templatePathWithinZip);
+      // const templateVal = clonedObj.get(TEMPLATE);
+      clonedObj.remove(TEMPLATE);
+
+      const { zipPaths, templatePathWithinZip } = this.createTemplateZipPaths();
       zipBag.push(...zipPaths);
+      clonedObj.set(TEMPLATE, templatePathWithinZip);
     }
 
     if (clonedObj.has(ASYNCCAPTURE)) {
@@ -286,7 +364,21 @@ class ExportConfig {
   }
 
   getFormattedConfigs() {
-    const clonedObj = this.cloneWithProcessedProperties();
+    let clonedObj = {};
+
+    try {
+      clonedObj = this.cloneWithProcessedProperties();
+    } catch (e) {
+      if (e.code === 'ENOENT' && !!e.path) {
+        const fileNotFoundError = new Error(`The file '${e.path}' which you have provided does not exist. Please provide a valid file.`);
+        fileNotFoundError.name = 'File Not Found';
+        fileNotFoundError.path = e.path;
+
+        throw fileNotFoundError;
+      }
+
+      throw e;
+    }
 
     const { typings } = clonedObj;
 
@@ -308,6 +400,13 @@ class ExportConfig {
 
       return obj;
     }, {});
+
+    if (!!processedObj.templateFormat && processedObj.type !== 'pdf') {
+      console.warn('templateFormat is not supported for types other than PDF. It will be ignored.');
+    }
+
+    processedObj[CLIENTNAME] = this.clientName;
+    processedObj[PLATFORM] = os.platform();
 
     return processedObj;
   }
@@ -437,10 +536,20 @@ class ExportConfig {
     });
   }
 
+  static filterNEFiles(fileBag) {
+    return fileBag.filter((file) => {
+      if (fs.existsSync(file.externalPath)) return true;
+      console.warn(`File not found: ${file.externalPath}. Ignoring file.`);
+      return false;
+    });
+  }
+
   static generateZip(fileBag) {
     const zip = new AdmZip();
 
-    fileBag.forEach((file) => {
+    const _fileBag = ExportConfig.filterNEFiles(fileBag);
+
+    _fileBag.forEach((file) => {
       const internalDir = path.dirname(file.internalPath);
       const internalName = path.basename(file.internalPath);
       zip.addLocalFile(file.externalPath, internalDir, internalName);

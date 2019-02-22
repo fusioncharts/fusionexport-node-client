@@ -18,7 +18,6 @@ const {
 } = require('./utils');
 
 const metadataFolderPath = path.join(__dirname, '../metadata');
-const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
 const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
 
 const mapMetadataTypeNameToJSValue = {
@@ -128,7 +127,6 @@ const PAYLOAD = 'payload';
 class ExportConfig {
   constructor() {
     this.configs = new Map();
-    this.metadata = JSON.parse(fs.readFileSync(metadataFilePath));
     this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
     this.disableTypeCheck = false;
     this.clientName = 'NODE';

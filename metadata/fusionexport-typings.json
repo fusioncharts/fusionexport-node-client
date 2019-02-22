@@ -49,7 +49,7 @@
     },
     "asyncCapture": {
         "type": "boolean",
-        "supportedTypes": ["string", "boolean"],
+        "supportedTypes": ["string", "integer", "boolean"],
         "converter": "BooleanConverter"
     },
     "maxWaitForCaptureExit": {

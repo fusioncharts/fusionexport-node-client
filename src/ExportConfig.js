@@ -20,17 +20,8 @@ const {
 const metadataFolderPath = path.join(__dirname, '../metadata');
 const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
 
-const mapMetadataTypeNameToJSValue = {
-  string: '',
-  boolean: true,
-  integer: 1,
-  object: {},
-  enum: '',
-  file: '',
-};
-
 function booleanConverter(value) {
-  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+  if (typeof value === 'string') {
     const stringValue = value.toLowerCase();
     if (stringValue === 'true') {
       return true;
@@ -38,7 +29,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
+  } else if (typeof value === 'number') {
     const numberValue = value;
     if (numberValue === 1) {
       return true;
@@ -46,7 +37,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.boolean) {
+  } else if (typeof value === 'boolean') {
     return value;
   }
 
@@ -54,7 +45,7 @@ function booleanConverter(value) {
 }
 
 function numberConverter(value) {
-  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+  if (typeof value === 'string') {
     const stringValue = value;
     const numberValue = Number(stringValue);
 
@@ -62,7 +53,7 @@ function numberConverter(value) {
       return numberValue;
     }
     throw Error("Couldn't convert to number");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
+  } else if (typeof value === 'number') {
     const numberValue = value;
     return numberValue;
   }
@@ -159,9 +150,8 @@ class ExportConfig {
     }
 
     const isSupported = reqdTyping.supportedTypes.some((type) => {
-      const valOfType = mapMetadataTypeNameToJSValue[type];
-
-      if (typeof valOfType === typeof configValue) {
+      // eslint-disable-next-line valid-typeof
+      if (typeof configValue === type) {
         return true;
       }
 
@@ -195,19 +185,13 @@ class ExportConfig {
     return configValue;
   }
 
-  checkTypings(configName, configValue) {
+  checkTypings(configName) {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
       invalidConfigError.name = 'Invalid Configuration';
       throw invalidConfigError;
-    }
-
-    const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
-
-    if (typeof configValue !== typeof valueOfType) {
-      throw new Error(`${configName} of type ${typeof configValue} is not allowed`);
     }
   }
 

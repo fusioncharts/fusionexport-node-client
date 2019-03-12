@@ -473,34 +473,29 @@ class ExportConfig {
     const resourceFilePath = _.clone(this.get('resourceFilePath'));
     let resourceDirectoryPath = path.dirname(resourceFilePath);
 
-    // Load resourceFilePath content (JSON) as instance of Resources
     const resources = JSON.parse(fs.readFileSync(resourceFilePath));
     resources.include = resources.include || [];
     resources.exclude = resources.exclude || [];
-    // New attribute `resolvePath` - overloads actual direcotry location for glob resolve
+
     if (resources.resolvePath !== undefined) {
       resourceDirectoryPath = resources.resolvePath;
     }
 
-    {
-      const listResourceIncludePaths = [];
-      const listResourceExcludePaths = [];
+    const listResourceIncludePaths = [];
+    const listResourceExcludePaths = [];
 
-      /* eslint-disable no-restricted-syntax */
-      for (const eachIncludePath of resources.include) {
-        const matchedFiles = glob.sync(eachIncludePath, { cwd: resourceDirectoryPath });
-        listResourceIncludePaths.push.apply(matchedFiles);
-      }
+    resources.include.forEach((includePath) => {
+      const matchedFiles = glob.sync(includePath, { cwd: resourceDirectoryPath });
+      listResourceIncludePaths.push(matchedFiles);
+    });
 
-      for (const eachExcludePath of resources.exclude) {
-        const matchedFiles = glob.sync(eachExcludePath, { cwd: resourceDirectoryPath });
-        listResourceExcludePaths.push.apply(matchedFiles);
-      }
-      /* eslint-enable no-restricted-syntax */
+    resources.exclude.forEach((excludePath) => {
+      const matchedFiles = glob.sync(excludePath, { cwd: resourceDirectoryPath });
+      listResourceExcludePaths.push(matchedFiles);
+    });
 
-      listResourcePaths = diffArrays(listResourceIncludePaths, listResourceExcludePaths);
-      baseDirectoryPath = resources.basePath;
-    }
+    listResourcePaths = diffArrays(listResourceIncludePaths, listResourceExcludePaths);
+    baseDirectoryPath = resources.basePath;
 
     return {
       baseDirectoryPath,

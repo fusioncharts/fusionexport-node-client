@@ -97,6 +97,6 @@ exportedimages
 dump.txt
 timetaken.txt
 build
-export-*
+export*
 fusioncharts-export.zip
 test_*.*

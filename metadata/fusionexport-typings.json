@@ -1,34 +1,28 @@
 {
     "chartConfig": {
-        "type": "string",
-        "supportedTypes": ["string", "object", "file"],
+        "supportedTypes": ["string", "object"],
         "converter": "ChartConfigConverter"
     },
     "inputSVG": {
-        "type": "string",
-        "supportedTypes": ["file"]
+        "supportedTypes": ["string"]
     },
     "template": {
-        "type": "string",
         "supportedTypes": ["string"]
     },
     "templateFilePath": {
-        "type": "string",
-        "supportedTypes": ["file"]
+        "supportedTypes": ["string"]
     },
     "templateWidth": {
-        "type": "integer",
         "supportedTypes": ["string", "integer"],
         "converter": "NumberConverter"
     },
     "templateHeight": {
-        "type": "integer",
         "supportedTypes": ["string", "integer"],
         "converter": "NumberConverter"
     },
     "templateFormat": {
         "type": "enum",
-        "supportedTypes": ["enum"],
+        "supportedTypes": ["string"],
         "converter": "EnumConverter",
         "dataset": [
             "Letter",
@@ -44,38 +38,30 @@
         ]
     },
     "callbackFilePath": {
-        "type": "string",
-        "supportedTypes": ["file"]
+        "supportedTypes": ["string"]
     },
     "asyncCapture": {
-        "type": "boolean",
-        "supportedTypes": ["string", "boolean"],
+        "supportedTypes": ["string", "integer", "boolean"],
         "converter": "BooleanConverter"
     },
     "maxWaitForCaptureExit": {
-        "type": "integer",
         "supportedTypes": ["string", "integer"],
         "converter": "NumberConverter"
     },
     "dashboardLogo": {
-        "type": "string",
-        "supportedTypes": ["file"]
+        "supportedTypes": ["string"]
     },
     "dashboardHeading": {
-        "type": "string",
         "supportedTypes": ["string"]
     },
     "dashboardSubheading": {
-        "type": "string",
         "supportedTypes": ["string"]
     },
     "outputFile": {
-        "type": "string",
         "supportedTypes": ["string"]
     },
     "type": {
-        "type": "string",
-        "supportedTypes": ["enum"],
+        "supportedTypes": ["string"],
         "converter": "EnumConverter",
         "dataset": [
             "jpeg",
@@ -90,8 +76,7 @@
         ]
     },
     "quality": {
-        "type": "string",
-        "supportedTypes": ["enum"],
+        "supportedTypes": ["string"],
         "converter": "EnumConverter",
         "dataset": [
             "good",
@@ -100,11 +85,9 @@
         ]
     },
     "outputFileDefinition": {
-        "type": "string",
-        "supportedTypes": ["file"]
+        "supportedTypes": ["string"]
     },
     "resourceFilePath": {
-        "type": "string",
-        "supportedTypes": ["file"]
+        "supportedTypes": ["string"]
     }
 }

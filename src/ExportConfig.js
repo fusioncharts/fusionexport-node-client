@@ -18,20 +18,10 @@ const {
 } = require('./utils');
 
 const metadataFolderPath = path.join(__dirname, '../metadata');
-const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
 const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
 
-const mapMetadataTypeNameToJSValue = {
-  string: '',
-  boolean: true,
-  integer: 1,
-  object: {},
-  enum: '',
-  file: '',
-};
-
 function booleanConverter(value) {
-  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+  if (typeof value === 'string') {
     const stringValue = value.toLowerCase();
     if (stringValue === 'true') {
       return true;
@@ -39,7 +29,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
+  } else if (typeof value === 'number') {
     const numberValue = value;
     if (numberValue === 1) {
       return true;
@@ -47,7 +37,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.boolean) {
+  } else if (typeof value === 'boolean') {
     return value;
   }
 
@@ -55,7 +45,7 @@ function booleanConverter(value) {
 }
 
 function numberConverter(value) {
-  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+  if (typeof value === 'string') {
     const stringValue = value;
     const numberValue = Number(stringValue);
 
@@ -63,7 +53,7 @@ function numberConverter(value) {
       return numberValue;
     }
     throw Error("Couldn't convert to number");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.integer) {
+  } else if (typeof value === 'number') {
     const numberValue = value;
     return numberValue;
   }
@@ -128,7 +118,6 @@ const PAYLOAD = 'payload';
 class ExportConfig {
   constructor() {
     this.configs = new Map();
-    this.metadata = JSON.parse(fs.readFileSync(metadataFilePath));
     this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
     this.disableTypeCheck = false;
     this.clientName = 'NODE';
@@ -161,9 +150,8 @@ class ExportConfig {
     }
 
     const isSupported = reqdTyping.supportedTypes.some((type) => {
-      const valOfType = mapMetadataTypeNameToJSValue[type];
-
-      if (typeof valOfType === typeof configValue) {
+      // eslint-disable-next-line valid-typeof
+      if (typeof configValue === type) {
         return true;
       }
 
@@ -197,19 +185,13 @@ class ExportConfig {
     return configValue;
   }
 
-  checkTypings(configName, configValue) {
+  checkTypings(configName) {
     const reqdTyping = this.typings[configName];
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
       invalidConfigError.name = 'Invalid Configuration';
       throw invalidConfigError;
-    }
-
-    const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
-
-    if (typeof configValue !== typeof valueOfType) {
-      throw new Error(`${configName} of type ${typeof configValue} is not allowed`);
     }
   }
 
@@ -491,34 +473,29 @@ class ExportConfig {
     const resourceFilePath = _.clone(this.get('resourceFilePath'));
     let resourceDirectoryPath = path.dirname(resourceFilePath);
 
-    // Load resourceFilePath content (JSON) as instance of Resources
     const resources = JSON.parse(fs.readFileSync(resourceFilePath));
     resources.include = resources.include || [];
     resources.exclude = resources.exclude || [];
-    // New attribute `resolvePath` - overloads actual direcotry location for glob resolve
+
     if (resources.resolvePath !== undefined) {
       resourceDirectoryPath = resources.resolvePath;
     }
 
-    {
-      const listResourceIncludePaths = [];
-      const listResourceExcludePaths = [];
+    const listResourceIncludePaths = [];
+    const listResourceExcludePaths = [];
 
-      /* eslint-disable no-restricted-syntax */
-      for (const eachIncludePath of resources.include) {
-        const matchedFiles = glob.sync(eachIncludePath, { cwd: resourceDirectoryPath });
-        listResourceIncludePaths.push.apply(matchedFiles);
-      }
+    resources.include.forEach((includePath) => {
+      const matchedFiles = glob.sync(includePath, { cwd: resourceDirectoryPath });
+      listResourceIncludePaths.push(matchedFiles);
+    });
 
-      for (const eachExcludePath of resources.exclude) {
-        const matchedFiles = glob.sync(eachExcludePath, { cwd: resourceDirectoryPath });
-        listResourceExcludePaths.push.apply(matchedFiles);
-      }
-      /* eslint-enable no-restricted-syntax */
+    resources.exclude.forEach((excludePath) => {
+      const matchedFiles = glob.sync(excludePath, { cwd: resourceDirectoryPath });
+      listResourceExcludePaths.push(matchedFiles);
+    });
 
-      listResourcePaths = diffArrays(listResourceIncludePaths, listResourceExcludePaths);
-      baseDirectoryPath = resources.basePath;
-    }
+    listResourcePaths = diffArrays(listResourceIncludePaths, listResourceExcludePaths);
+    baseDirectoryPath = resources.basePath;
 
     return {
       baseDirectoryPath,

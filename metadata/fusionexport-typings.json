@@ -13,11 +13,11 @@
         "supportedTypes": ["string"]
     },
     "templateWidth": {
-        "supportedTypes": ["string", "integer"],
+        "supportedTypes": ["string", "number"],
         "converter": "NumberConverter"
     },
     "templateHeight": {
-        "supportedTypes": ["string", "integer"],
+        "supportedTypes": ["string", "number"],
         "converter": "NumberConverter"
     },
     "templateFormat": {
@@ -41,11 +41,11 @@
         "supportedTypes": ["string"]
     },
     "asyncCapture": {
-        "supportedTypes": ["string", "integer", "boolean"],
+        "supportedTypes": ["string", "number", "boolean"],
         "converter": "BooleanConverter"
     },
     "maxWaitForCaptureExit": {
-        "supportedTypes": ["string", "integer"],
+        "supportedTypes": ["string", "number"],
         "converter": "NumberConverter"
     },
     "dashboardLogo": {

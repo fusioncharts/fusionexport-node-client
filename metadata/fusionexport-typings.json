@@ -84,6 +84,30 @@
             "best"
         ]
     },
+    "orientation": {
+        "supportedTypes": ["string"],
+        "converter": "EnumConverter",
+        "dataset": [
+            "portrait",
+            "landscape"
+        ]
+    },
+    "headerEnabled": {
+        "supportedTypes": ["string"]
+    },
+    "footerEnabled": {
+        "supportedTypes": ["string"]
+    },
+    "headerComponents": {
+        "supportedTypes": ["string"]
+    },
+    "footerComponents": {
+        "supportedTypes": ["string"]
+    },
+    "pageMargin": {
+        "supportedTypes": ["string", "object"],
+        "converter": "MarginConverter"
+    },
     "outputFileDefinition": {
         "supportedTypes": ["string"]
     },

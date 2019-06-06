@@ -75,6 +75,14 @@ function enumConverter(value, dataset) {
   return lowerCasedValue;
 }
 
+function componentConverter(value) {
+  return value;
+}
+
+function marginConverter(value) {
+  return value;
+}
+
 function chartConfigConverter(value) {
   if (typeof value === 'object') {
     let configList = value;
@@ -102,6 +110,8 @@ const mapConverterNameToConverter = {
   NumberConverter: numberConverter,
   EnumConverter: enumConverter,
   ChartConfigConverter: chartConfigConverter,
+  ComponentConverter: componentConverter,
+  MarginConverter: marginConverter,
 };
 
 const CHARTCONFIG = 'chartConfig';

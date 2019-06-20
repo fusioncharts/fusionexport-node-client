@@ -13,9 +13,14 @@ const exportConfig = new ExportConfig();
 
 exportConfig.set('chartConfig', path.join(__dirname, 'resources', 'multiple.json'));
 exportConfig.set('templateFilePath', path.join(__dirname, 'resources', 'template.html'));
-exportConfig.set('pageMargin', '{"top": "50px", "bottom":"50px", "left":"50px","right":"50px"}');
-exportConfig.set('headerComponents', '{ "title": { "style": "color:blue;" } }');
-exportConfig.set('footerComponents', '{ "pageNumber": { "style": "color:green;" } }');
+// exportConfig.set('pageMargin', {
+//   top: '50px',
+//   bottom: '50px',
+//   left: '50px',
+//   right: '50px',
+// });
+// exportConfig.set('headerComponents', { title: { style: 'color:blue;' } });
+// exportConfig.set('footerComponents', { pageNumber: { style: 'color:green;' } });
 exportConfig.set('headerEnabled', 'true');
 exportConfig.set('footerEnabled', 'true');
 exportConfig.set('type', 'pdf');

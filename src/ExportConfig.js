@@ -75,12 +75,14 @@ function enumConverter(value, dataset) {
   return lowerCasedValue;
 }
 
-function componentConverter(value) {
-  return value;
-}
+function objectConverter(value) {
+  if (typeof value === 'object' && value !== null) {
+    return JSON.stringify(value);
+  } else if (typeof value === 'string') {
+    return value;
+  }
 
-function marginConverter(value) {
-  return value;
+  return String(value);
 }
 
 function chartConfigConverter(value) {
@@ -110,8 +112,7 @@ const mapConverterNameToConverter = {
   NumberConverter: numberConverter,
   EnumConverter: enumConverter,
   ChartConfigConverter: chartConfigConverter,
-  ComponentConverter: componentConverter,
-  MarginConverter: marginConverter,
+  ObjectConverter: objectConverter,
 };
 
 const CHARTCONFIG = 'chartConfig';

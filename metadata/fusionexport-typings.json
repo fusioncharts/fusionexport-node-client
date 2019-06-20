@@ -99,14 +99,16 @@
         "supportedTypes": ["string"]
     },
     "headerComponents": {
-        "supportedTypes": ["string"]
+        "supportedTypes": ["string", "object"],
+        "converter": "ObjectConverter"
     },
     "footerComponents": {
-        "supportedTypes": ["string"]
+        "supportedTypes": ["string", "object"],
+        "converter": "ObjectConverter"
     },
     "pageMargin": {
         "supportedTypes": ["string", "object"],
-        "converter": "MarginConverter"
+        "converter": "ObjectConverter"
     },
     "outputFileDefinition": {
         "supportedTypes": ["string"]

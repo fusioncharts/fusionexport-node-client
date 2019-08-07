@@ -12,11 +12,6 @@ describe('ExportConfig', () => {
     expect(exportConfig.typings).to.deep.equal(typings);
   });
 
-  it('should parse meta file on initialization', () => {
-    const meta = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'metadata', 'fusionexport-meta.json')));
-    expect(exportConfig.metadata).to.deep.equal(meta);
-  });
-
   it('should set clientName as NODE on initialization', () => {
     expect(exportConfig.clientName).to.equal('NODE');
   });

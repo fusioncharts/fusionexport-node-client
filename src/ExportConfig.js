@@ -44,6 +44,16 @@ function booleanConverter(value) {
   throw Error("Couldn't convert to boolean");
 }
 
+function booleanToStringConverter(value) {
+  if (typeof value === 'string') {
+    if (value === 'true') return value;
+    return 'false';
+  } else if (typeof value === 'boolean') {
+    return `${value}`;
+  }
+  throw Error("Couldn't convert to boolean");
+}
+
 function numberConverter(value) {
   if (typeof value === 'string') {
     const stringValue = value;
@@ -109,6 +119,7 @@ function chartConfigConverter(value) {
 
 const mapConverterNameToConverter = {
   BooleanConverter: booleanConverter,
+  BooleanToStringConverter: booleanToStringConverter,
   NumberConverter: numberConverter,
   EnumConverter: enumConverter,
   ChartConfigConverter: chartConfigConverter,
@@ -264,7 +275,7 @@ class ExportConfig {
     clonedObj.disableTypeCheck = true;
 
     if (clonedObj.get('templateFilePath') && clonedObj.get('template')) {
-      console.warn('Both \'templateFilePath\' and \'template\' is provided. \'templateFilePath\' will be ignored.');
+      console.warn("Both 'templateFilePath' and 'template' is provided. 'templateFilePath' will be ignored.");
       clonedObj.remove('templateFilePath');
     }
 
@@ -363,7 +374,9 @@ class ExportConfig {
       clonedObj = this.cloneWithProcessedProperties();
     } catch (e) {
       if (e.code === 'ENOENT' && !!e.path) {
-        const fileNotFoundError = new Error(`The file '${e.path}' which you have provided does not exist. Please provide a valid file.`);
+        const fileNotFoundError = new Error(`The file '${
+          e.path
+        }' which you have provided does not exist. Please provide a valid file.`);
         fileNotFoundError.name = 'File Not Found';
         fileNotFoundError.path = e.path;
 
@@ -422,12 +435,13 @@ class ExportConfig {
     }
 
     // Filter listResourcePaths to those only which are within basePath
-    listResourcePaths = listResourcePaths
-      .filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
+    listResourcePaths = listResourcePaths.filter(tmpPath =>
+      isWithinPath(tmpPath, baseDirectoryPath));
 
-    const zipPaths = ExportConfig.generatePathForZip([
-      ...listExtractedPaths, ...listResourcePaths, templateFilePath,
-    ], baseDirectoryPath);
+    const zipPaths = ExportConfig.generatePathForZip(
+      [...listExtractedPaths, ...listResourcePaths, templateFilePath],
+      baseDirectoryPath,
+    );
 
     const prefixedZipPaths = zipPaths.map(zipPath => ({
       internalPath: path.join('template', zipPath.internalPath),
@@ -452,18 +466,21 @@ class ExportConfig {
       const templateDirectory = path.dirname(templateFilePath);
       const html = fs.readFileSync(path.resolve(templateFilePath));
       const { JSDOM } = jsdom;
-      const { window: { document } } = new JSDOM(html);
+      const {
+        window: { document },
+      } = new JSDOM(html);
 
       const links = [...document.querySelectorAll('link')].map(l => l.href);
       const scripts = [...document.querySelectorAll('script')].map(s => s.src);
       const imgs = [...document.querySelectorAll('img')].map(i => i.src);
 
-      const linkURLs = links.filter(isLocalResource).map(link =>
-        path.resolve(templateDirectory, link));
-      const scriptURLs = scripts.filter(isLocalResource).map(script =>
-        path.resolve(templateDirectory, script));
-      const imgURLs = imgs.filter(isLocalResource).map(img =>
-        path.resolve(templateDirectory, img));
+      const linkURLs = links
+        .filter(isLocalResource)
+        .map(link => path.resolve(templateDirectory, link));
+      const scriptURLs = scripts
+        .filter(isLocalResource)
+        .map(script => path.resolve(templateDirectory, script));
+      const imgURLs = imgs.filter(isLocalResource).map(img => path.resolve(templateDirectory, img));
 
       return [...linkURLs, ...scriptURLs, ...imgURLs];
     }

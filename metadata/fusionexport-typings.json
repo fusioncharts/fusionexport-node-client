@@ -93,10 +93,12 @@
         ]
     },
     "headerEnabled": {
-        "supportedTypes": ["string"]
+        "supportedTypes": ["string", "boolean"],
+        "converter": "BooleanToStringConverter"
     },
     "footerEnabled": {
-        "supportedTypes": ["string"]
+        "supportedTypes": ["string", "boolean"],
+        "converter": "BooleanToStringConverter"
     },
     "headerComponents": {
         "supportedTypes": ["string", "object"],

@@ -1,6 +1,6 @@
 {
   "name": "fusionexport-node-client",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "NodeJS SDK for FusionExport. Enables exporting from FusionExport through NodeJS.",
   "keywords": [
     "fusionexport",

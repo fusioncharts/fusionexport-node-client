@@ -1,23 +1,21 @@
 /* Send FusionExport files as attachments via mail
 
-
  * Sending email using package - nodemailer (https://nodemailer.com)
 
- * Provide your SMTP details for settiing up (line no. 21).
+ * Provide your SMTP details for settiing up (line no. 28).
 
  * If this is something new for you, try using https://mailtrap.io for quickly getting started.
 
  * If you are using Gmail, read the setup instructions here - https://nodemailer.com/usage/using-gmail
 
- * Finally, provide email metadata (details like subject, to, from)
- * while sending email (line no. 39).
+ * Finally, provide email metadata (details like subject, to, from) while sending email (line no. 43).
  */
 
 const nodemailer = require('nodemailer');
 const path = require('path');
 
 // Require FusionExport
-const { ExportManager, ExportConfig } = require('../');
+const { ExportManager, ExportConfig } = require('..');
 
 // Instantiate ExportManager
 const exportManager = new ExportManager();
@@ -27,10 +25,10 @@ const exportConfig = new ExportConfig();
 
 // nodemailer configuration
 const transporter = nodemailer.createTransport({
-  host: 'smtp.example.com',
+  host: 'smtp.mailtrap.io',
   auth: {
-    user: "<SENDER'S EMAIL>",
-    pass: "<SENDER'S PASSWORD>",
+    user: "9217733c3a014f",
+    pass: "39564c5d1ddd00",
   },
 });
 

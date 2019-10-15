@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <style>
+      #container {
+        width: 1200px;
+        height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>
+      function fetchCheckStatus(response) {
+        if (response.status >= 200 && response.status < 300) {
+          return response;
+        }
+        const error = new Error(response.statusText);
+        error.response = response;
+        throw error;
+      }
+
+      function loadData(url) {
+        const option = {
+          method: "GET",
+          headers: new Headers(),
+          mode: "cors",
+          cache: "default"
+        };
+
+        return fetch(url, option)
+          .then(fetchCheckStatus)
+          .then(resp => {
+            const contentType = resp.headers.get("Content-Type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+              return resp.json();
+            }
+            return resp.text();
+          })
+          .then(data => data)
+          .catch(() => {
+            console.log("Something went wrong! Please check data/schema files");
+          });
+      }
+
+      Promise.all([
+        loadData(
+          "https://s3.eu-central-1.amazonaws.com/fusion.store/ft/data/line-chart-with-time-axis-data.json"
+        ),
+        loadData(
+          "https://s3.eu-central-1.amazonaws.com/fusion.store/ft/schema/line-chart-with-time-axis-schema.json"
+        )
+      ]).then(res => {
+        const data = res[0];
+        const schema = res[1];
+
+        const dataStore = new FusionCharts.DataStore(data, schema);
+
+        new FusionCharts({
+          type: "timeseries",
+          renderAt: "container",
+          width: "100%",
+          height: "100%",
+          dataSource: {
+            // Initially data is set as null
+            caption: {
+              text: "Sales Analysis"
+            },
+            subcaption: {
+              text: "Grocery"
+            },
+            yAxis: [
+              {
+                plot: {
+                  value: "Grocery Sales Value",
+                  type: "line"
+                },
+                format: {
+                  prefix: "$"
+                },
+                title: "Sale Value"
+              }
+            ],
+            data: dataStore.getDataTable()
+          }
+        }).render();
+      });
+    </script>
+  </body>
+</html>

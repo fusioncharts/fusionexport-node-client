@@ -7,6 +7,8 @@
             {
                 "allow": ["warn", "error"]
             }
-        ]
+        ],
+        "linebreak-style": 0,
+        "quotes":"off"
     }
 }

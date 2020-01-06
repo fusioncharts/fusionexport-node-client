@@ -25,10 +25,10 @@ const exportConfig = new ExportConfig();
 
 // nodemailer configuration
 const transporter = nodemailer.createTransport({
-  host: 'smtp.mailtrap.io',
+  host: '<HOST>',
   auth: {
-    user: "9217733c3a014f",
-    pass: "39564c5d1ddd00",
+    user: "<USERNAME>",
+    pass: "<PASSWORD>",
   },
 });
 

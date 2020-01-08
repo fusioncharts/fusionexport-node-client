@@ -1,8 +1,8 @@
 [{
     "type": "usa",
     "renderAt": "chart-container-map",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -182,8 +182,8 @@
 }, {
     "type": "scrollcombidy2d",
     "renderAt": "chart-container-top-adv",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -870,8 +870,8 @@
 }, {
     "type": "overlappedBar2d",
     "renderAt": "chart-container-reg",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -1045,8 +1045,8 @@
 }, {
     "type": "msline",
     "renderAt": "chart-container-reg-monthly",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -1174,8 +1174,8 @@
 }, {
     "type": "overlappedBar2d",
     "renderAt": "chart-container-product",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -1373,8 +1373,8 @@
 }, {
     "type": "usa",
     "renderAt": "chart-container-map",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -1554,8 +1554,8 @@
 }, {
     "type": "scrollcombidy2d",
     "renderAt": "chart-container-top-adv",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -2242,8 +2242,8 @@
 }, {
     "type": "overlappedBar2d",
     "renderAt": "chart-container-reg",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -2417,8 +2417,8 @@
 }, {
     "type": "msline",
     "renderAt": "chart-container-reg-monthly",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {
@@ -2546,8 +2546,8 @@
 }, {
     "type": "overlappedBar2d",
     "renderAt": "chart-container-product",
-    "width": "100%",
-    "height": "100%",
+    "width": "600",
+    "height": "400",
     "dataFormat": "json",
     "dataSource": {
         "chart": {

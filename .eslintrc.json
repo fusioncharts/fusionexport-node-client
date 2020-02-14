@@ -1,14 +1,16 @@
 {
-    "extends": "airbnb-base",
-    "rules": {
-        "no-underscore-dangle": "off",
-        "no-console": [
-            "warn",
-            {
-                "allow": ["warn", "error"]
-            }
-        ],
-        "linebreak-style": 0,
-        "quotes":"off"
-    }
+  "extends": ["airbnb-base", "prettier"],
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": ["error"],
+    "no-underscore-dangle": "off",
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "linebreak-style": 0,
+    "quotes": "off"
+  }
 }

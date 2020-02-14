@@ -1,11 +1,11 @@
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
-const _ = require('lodash');
-const jsdom = require('jsdom');
-const tmp = require('tmp');
-const AdmZip = require('adm-zip');
-const glob = require('glob');
+const os = require("os");
+const fs = require("fs");
+const path = require("path");
+const _ = require("lodash");
+const jsdom = require("jsdom");
+const tmp = require("tmp");
+const AdmZip = require("adm-zip");
+const glob = require("glob");
 
 const {
   getCommonAncestorDirectory,
@@ -15,21 +15,21 @@ const {
   readFileContent,
   diffArrays,
   humanizeArray,
-} = require('./utils');
+} = require("./utils");
 
-const metadataFolderPath = path.join(__dirname, '../metadata');
-const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
+const metadataFolderPath = path.join(__dirname, "../metadata");
+const typingsFilePath = path.join(metadataFolderPath, "fusionexport-typings.json");
 
 function booleanConverter(value) {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const stringValue = value.toLowerCase();
-    if (stringValue === 'true') {
+    if (stringValue === "true") {
       return true;
-    } else if (stringValue === 'false') {
+    } else if (stringValue === "false") {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === 'number') {
+  } else if (typeof value === "number") {
     const numberValue = value;
     if (numberValue === 1) {
       return true;
@@ -37,7 +37,7 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === 'boolean') {
+  } else if (typeof value === "boolean") {
     return value;
   }
 
@@ -45,17 +45,17 @@ function booleanConverter(value) {
 }
 
 function booleanToStringConverter(value) {
-  if (typeof value === 'string') {
-    if (value === 'true') return value;
-    return 'false';
-  } else if (typeof value === 'boolean') {
+  if (typeof value === "string") {
+    if (value === "true") return value;
+    return "false";
+  } else if (typeof value === "boolean") {
     return `${value}`;
   }
   throw Error("Couldn't convert to boolean");
 }
 
 function numberConverter(value) {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const stringValue = value;
     const numberValue = Number(stringValue);
 
@@ -63,7 +63,7 @@ function numberConverter(value) {
       return numberValue;
     }
     throw Error("Couldn't convert to number");
-  } else if (typeof value === 'number') {
+  } else if (typeof value === "number") {
     const numberValue = value;
     return numberValue;
   }
@@ -76,8 +76,10 @@ function enumConverter(value, dataset) {
   const lowerCasedValue = value.toLowerCase();
 
   if (!lowerCasedDataset.includes(lowerCasedValue)) {
-    const enumParseError = new Error(`${value} is not in supported set. Supported values are ${humanizeArray(dataset)}`);
-    enumParseError.name = 'Enum Parse Error';
+    const enumParseError = new Error(
+      `${value} is not in supported set. Supported values are ${humanizeArray(dataset)}`
+    );
+    enumParseError.name = "Enum Parse Error";
     enumParseError.dataset = dataset;
     throw enumParseError;
   }
@@ -86,9 +88,9 @@ function enumConverter(value, dataset) {
 }
 
 function objectConverter(value) {
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === "object" && value !== null) {
     return JSON.stringify(value);
-  } else if (typeof value === 'string') {
+  } else if (typeof value === "string") {
     return value;
   }
 
@@ -96,17 +98,17 @@ function objectConverter(value) {
 }
 
 function chartConfigConverter(value) {
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     let configList = value;
 
     if (!Array.isArray(value)) {
       configList = [value];
     }
 
-    configList.forEach((config) => {
+    configList.forEach(config => {
       if (!config.dataSource || !config.type) {
-        const invalidJSONError = new Error('JSON structure is invalid. Please check your JSON data.');
-        invalidJSONError.name = 'Invalid JSON';
+        const invalidJSONError = new Error("JSON structure is invalid. Please check your JSON data.");
+        invalidJSONError.name = "Invalid JSON";
         throw invalidJSONError;
       }
     });
@@ -126,30 +128,30 @@ const mapConverterNameToConverter = {
   ObjectConverter: objectConverter,
 };
 
-const CHARTCONFIG = 'chartConfig';
-const INPUTSVG = 'inputSVG';
-const CALLBACKS = 'callbackFilePath';
-const DASHBOARDLOGO = 'dashboardLogo';
-const OUTPUTFILEDEFINITION = 'outputFileDefinition';
-const CLIENTNAME = 'clientName';
-const PLATFORM = 'platform';
-const TEMPLATE = 'templateFilePath';
-const ASYNCCAPTURE = 'asyncCapture';
-const PAYLOAD = 'payload';
+const CHARTCONFIG = "chartConfig";
+const INPUTSVG = "inputSVG";
+const CALLBACKS = "callbackFilePath";
+const DASHBOARDLOGO = "dashboardLogo";
+const OUTPUTFILEDEFINITION = "outputFileDefinition";
+const CLIENTNAME = "clientName";
+const PLATFORM = "platform";
+const TEMPLATE = "templateFilePath";
+const ASYNCCAPTURE = "asyncCapture";
+const PAYLOAD = "payload";
 
 class ExportConfig {
   constructor() {
     this.configs = new Map();
     this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
     this.disableTypeCheck = false;
-    this.clientName = 'NODE';
+    this.clientName = "NODE";
   }
 
   set(name, value) {
     const configName = name;
     let configValue = value;
-    if (typeof name !== 'string') {
-      throw new Error('Only strings are allowed as a key name');
+    if (typeof name !== "string") {
+      throw new Error("Only strings are allowed as a key name");
     }
 
     if (!this.disableTypeCheck) {
@@ -167,11 +169,11 @@ class ExportConfig {
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = 'Invalid Configuration';
+      invalidConfigError.name = "Invalid Configuration";
       throw invalidConfigError;
     }
 
-    const isSupported = reqdTyping.supportedTypes.some((type) => {
+    const isSupported = reqdTyping.supportedTypes.some(type => {
       // eslint-disable-next-line valid-typeof
       if (typeof configValue === type) {
         return true;
@@ -181,8 +183,12 @@ class ExportConfig {
     });
 
     if (!isSupported) {
-      const invalidDataTypeError = new Error(`${configName} of type ${typeof configValue} is unsupported. Supported data types are ${humanizeArray(reqdTyping.supportedTypes)}.`);
-      invalidDataTypeError.name = 'Invalid Data Type';
+      const invalidDataTypeError = new Error(
+        `${configName} of type ${typeof configValue} is unsupported. Supported data types are ${humanizeArray(
+          reqdTyping.supportedTypes
+        )}.`
+      );
+      invalidDataTypeError.name = "Invalid Data Type";
       throw invalidDataTypeError;
     }
   }
@@ -192,11 +198,11 @@ class ExportConfig {
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = 'Invalid Configuration';
+      invalidConfigError.name = "Invalid Configuration";
       throw invalidConfigError;
     }
 
-    const converterName = reqdTyping.converter || '';
+    const converterName = reqdTyping.converter || "";
     const converterFunction = mapConverterNameToConverter[converterName];
     const { dataset } = reqdTyping;
 
@@ -212,7 +218,7 @@ class ExportConfig {
 
     if (!reqdTyping) {
       const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = 'Invalid Configuration';
+      invalidConfigError.name = "Invalid Configuration";
       throw invalidConfigError;
     }
   }
@@ -274,9 +280,9 @@ class ExportConfig {
     const clonedObj = _.cloneDeep(this);
     clonedObj.disableTypeCheck = true;
 
-    if (clonedObj.get('templateFilePath') && clonedObj.get('template')) {
+    if (clonedObj.get("templateFilePath") && clonedObj.get("template")) {
       console.warn("Both 'templateFilePath' and 'template' is provided. 'templateFilePath' will be ignored.");
-      clonedObj.remove('templateFilePath');
+      clonedObj.remove("templateFilePath");
     }
 
     const zipBag = [];
@@ -285,7 +291,7 @@ class ExportConfig {
       const chartConfigVal = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
 
-      if (chartConfigVal.endsWith('.json')) {
+      if (chartConfigVal.endsWith(".json")) {
         this.set(CHARTCONFIG, readFileContent(chartConfigVal, false));
       }
 
@@ -296,7 +302,7 @@ class ExportConfig {
       const oldValue = clonedObj.get(INPUTSVG);
       clonedObj.remove(INPUTSVG);
 
-      const internalFilePath = 'inputSVG.svg';
+      const internalFilePath = "inputSVG.svg";
       zipBag.push({
         internalPath: internalFilePath,
         externalPath: oldValue,
@@ -308,7 +314,7 @@ class ExportConfig {
       const oldValue = clonedObj.get(CALLBACKS);
       clonedObj.remove(CALLBACKS);
 
-      const internalFilePath = 'callbackFile.js';
+      const internalFilePath = "callbackFile.js";
       zipBag.push({
         internalPath: internalFilePath,
         externalPath: oldValue,
@@ -333,7 +339,7 @@ class ExportConfig {
       const oldValue = clonedObj.get(OUTPUTFILEDEFINITION);
       clonedObj.remove(OUTPUTFILEDEFINITION);
 
-      const internalFilePath = 'outputFileDefinition.js';
+      const internalFilePath = "outputFileDefinition.js";
       zipBag.push({
         internalPath: internalFilePath,
         externalPath: oldValue,
@@ -355,7 +361,7 @@ class ExportConfig {
       clonedObj.remove(ASYNCCAPTURE);
 
       if (oldValue) {
-        clonedObj.set(ASYNCCAPTURE, 'true');
+        clonedObj.set(ASYNCCAPTURE, "true");
       }
     }
 
@@ -373,11 +379,11 @@ class ExportConfig {
     try {
       clonedObj = this.cloneWithProcessedProperties();
     } catch (e) {
-      if (e.code === 'ENOENT' && !!e.path) {
-        const fileNotFoundError = new Error(`The file '${
-          e.path
-        }' which you have provided does not exist. Please provide a valid file.`);
-        fileNotFoundError.name = 'File Not Found';
+      if (e.code === "ENOENT" && !!e.path) {
+        const fileNotFoundError = new Error(
+          `The file '${e.path}' which you have provided does not exist. Please provide a valid file.`
+        );
+        fileNotFoundError.name = "File Not Found";
         fileNotFoundError.path = e.path;
 
         throw fileNotFoundError;
@@ -392,9 +398,9 @@ class ExportConfig {
     const processedObj = keys.reduce((obj, key) => {
       const val = clonedObj.configs.get(key);
 
-      if (key === 'resourceFilePath') return obj;
+      if (key === "resourceFilePath") return obj;
 
-      if (key === 'payload') {
+      if (key === "payload") {
         // eslint-disable-next-line no-param-reassign
         obj[key] = val;
       }
@@ -407,8 +413,8 @@ class ExportConfig {
       return obj;
     }, {});
 
-    if (!!processedObj.templateFormat && processedObj.type !== 'pdf') {
-      console.warn('templateFormat is not supported for types other than PDF. It will be ignored.');
+    if (!!processedObj.templateFormat && processedObj.type !== "pdf") {
+      console.warn("templateFormat is not supported for types other than PDF. It will be ignored.");
     }
 
     processedObj[CLIENTNAME] = this.clientName;
@@ -435,23 +441,19 @@ class ExportConfig {
     }
 
     // Filter listResourcePaths to those only which are within basePath
-    listResourcePaths = listResourcePaths.filter(tmpPath =>
-      isWithinPath(tmpPath, baseDirectoryPath));
+    listResourcePaths = listResourcePaths.filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
 
     const zipPaths = ExportConfig.generatePathForZip(
       [...listExtractedPaths, ...listResourcePaths, templateFilePath],
-      baseDirectoryPath,
+      baseDirectoryPath
     );
 
     const prefixedZipPaths = zipPaths.map(zipPath => ({
-      internalPath: path.join('template', zipPath.internalPath),
+      internalPath: path.join("template", zipPath.internalPath),
       externalPath: zipPath.externalPath,
     }));
 
-    const templatePathWithinZip = path.join(
-      'template',
-      getRelativePathFrom(templateFilePath, baseDirectoryPath),
-    );
+    const templatePathWithinZip = path.join("template", getRelativePathFrom(templateFilePath, baseDirectoryPath));
 
     return {
       zipPaths: prefixedZipPaths,
@@ -470,16 +472,12 @@ class ExportConfig {
         window: { document },
       } = new JSDOM(html);
 
-      const links = [...document.querySelectorAll('link')].map(l => l.href);
-      const scripts = [...document.querySelectorAll('script')].map(s => s.src);
-      const imgs = [...document.querySelectorAll('img')].map(i => i.src);
+      const links = [...document.querySelectorAll("link")].map(l => l.href);
+      const scripts = [...document.querySelectorAll("script")].map(s => s.src);
+      const imgs = [...document.querySelectorAll("img")].map(i => i.src);
 
-      const linkURLs = links
-        .filter(isLocalResource)
-        .map(link => path.resolve(templateDirectory, link));
-      const scriptURLs = scripts
-        .filter(isLocalResource)
-        .map(script => path.resolve(templateDirectory, script));
+      const linkURLs = links.filter(isLocalResource).map(link => path.resolve(templateDirectory, link));
+      const scriptURLs = scripts.filter(isLocalResource).map(script => path.resolve(templateDirectory, script));
       const imgURLs = imgs.filter(isLocalResource).map(img => path.resolve(templateDirectory, img));
 
       return [...linkURLs, ...scriptURLs, ...imgURLs];
@@ -491,14 +489,14 @@ class ExportConfig {
     let baseDirectoryPath;
     let listResourcePaths = [];
 
-    if (!this.has('resourceFilePath')) {
+    if (!this.has("resourceFilePath")) {
       return {
         baseDirectoryPath,
         listResourcePaths,
       };
     }
 
-    const resourceFilePath = _.clone(this.get('resourceFilePath'));
+    const resourceFilePath = _.clone(this.get("resourceFilePath"));
     let resourceDirectoryPath = path.dirname(resourceFilePath);
 
     const resources = JSON.parse(fs.readFileSync(resourceFilePath));
@@ -512,12 +510,12 @@ class ExportConfig {
     const listResourceIncludePaths = [];
     const listResourceExcludePaths = [];
 
-    resources.include.forEach((includePath) => {
+    resources.include.forEach(includePath => {
       const matchedFiles = glob.sync(includePath, { cwd: resourceDirectoryPath });
       listResourceIncludePaths.push(matchedFiles);
     });
 
-    resources.exclude.forEach((excludePath) => {
+    resources.exclude.forEach(excludePath => {
       const matchedFiles = glob.sync(excludePath, { cwd: resourceDirectoryPath });
       listResourceExcludePaths.push(matchedFiles);
     });
@@ -532,7 +530,7 @@ class ExportConfig {
   }
 
   static generatePathForZip(listAllFilePaths, baseDirectoryPath) {
-    return listAllFilePaths.map((filePath) => {
+    return listAllFilePaths.map(filePath => {
       const filePathWithinZip = getRelativePathFrom(filePath, baseDirectoryPath);
       return {
         internalPath: filePathWithinZip,
@@ -542,7 +540,7 @@ class ExportConfig {
   }
 
   static filterNEFiles(fileBag) {
-    return fileBag.filter((file) => {
+    return fileBag.filter(file => {
       if (fs.existsSync(file.externalPath)) return true;
       console.warn(`File not found: ${file.externalPath}. Ignoring file.`);
       return false;
@@ -554,13 +552,13 @@ class ExportConfig {
 
     const _fileBag = ExportConfig.filterNEFiles(fileBag);
 
-    _fileBag.forEach((file) => {
+    _fileBag.forEach(file => {
       const internalDir = path.dirname(file.internalPath);
       const internalName = path.basename(file.internalPath);
       zip.addLocalFile(file.externalPath, internalDir, internalName);
     });
 
-    const zipFile = tmp.fileSync({ postfix: '.zip' });
+    const zipFile = tmp.fileSync({ postfix: ".zip" });
 
     zip.writeZip(zipFile.name);
 

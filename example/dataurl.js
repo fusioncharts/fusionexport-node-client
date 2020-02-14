@@ -1,17 +1,21 @@
-// Exporting a chart
-
-const path = require("path");
-
-// Require FusionExport
 const { ExportManager, ExportConfig } = require("../");
 
-// Instantiate ExportManager
 const exportManager = new ExportManager();
 
 // Instantiate ExportConfig and add the required configurations
 const exportConfig = new ExportConfig();
 
-exportConfig.set("chartConfig", path.join(__dirname, "resources", "single.json"));
+const chartConfig = [
+  {
+    type: "Column2D",
+    width: "700",
+    height: "400",
+    dataFormat: "jsonurl",
+    dataSource: "https://static.fusioncharts.com/sample/oilReserves.json",
+  },
+];
+
+exportConfig.set("chartConfig", chartConfig);
 
 // provide the export config
 exportManager

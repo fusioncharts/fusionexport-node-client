@@ -1,1 +1,1 @@
-document.body.style.background = 'pink';
+document.body.style.background = "pink";

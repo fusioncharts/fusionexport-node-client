@@ -21,7 +21,20 @@
     "url": "git+https://github.com/fusioncharts/fusionexport-node-client.git"
   },
   "scripts": {
-    "test": "mocha test/**/*.spec.js"
+    "test": "mocha test/**/*.spec.js",
+    "prettify": "prettier --config ./.prettierrc --write '**/*.js'"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
+    }
+  },
+  "lint-staged": {
+    "*.{js}": [
+      "eslint --fix",
+      "prettier --config ./.prettierrc --write"
+    ]
   },
   "main": "index.js",
   "dependencies": {
@@ -40,8 +53,13 @@
     "chai": "^4.2.0",
     "eslint": "^4.8.2",
     "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-import": "^2.8.0",
-    "mocha": "^5.2.0"
+    "eslint-plugin-prettier": "^3.1.2",
+    "husky": "^4.2.3",
+    "lint-staged": "^10.0.7",
+    "mocha": "^5.2.0",
+    "prettier": "^1.19.1"
   },
   "bundledDependencies": [
     "winston"

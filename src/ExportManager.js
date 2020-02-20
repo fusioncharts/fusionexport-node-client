@@ -21,11 +21,13 @@ class ExportManager extends EventEmitter {
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
-      ExportManager.sendToServer(this.config.url, formData).then((content) => {
-        const zipFile = ExportManager.saveZip(content);
-        const files = ExportManager.saveExportedFiles(zipFile, dirPath, unzip);
-        resolve(files);
-      }).catch(err => reject(err));
+      ExportManager.sendToServer(this.config.url, formData)
+        .then(content => {
+          const zipFile = ExportManager.saveZip(content);
+          const files = ExportManager.saveExportedFiles(zipFile, dirPath, unzip);
+          resolve(files);
+        })
+        .catch(err => reject(err));
     });
   }
 
@@ -35,10 +37,12 @@ class ExportManager extends EventEmitter {
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
-      ExportManager.sendToServer(this.config.url, formData).then((content) => {
-        const streams = ExportManager.unzipAsStream(content);
-        resolve(streams);
-      }).catch(err => reject(err));
+      ExportManager.sendToServer(this.config.url, formData)
+        .then(content => {
+          const streams = ExportManager.unzipAsStream(content);
+          resolve(streams);
+        })
+        .catch(err => reject(err));
     });
   }
 
@@ -86,7 +90,7 @@ class ExportManager extends EventEmitter {
           }
 
           resolve(body);
-        },
+        }
       );
     });
   }
@@ -122,12 +126,10 @@ class ExportManager extends EventEmitter {
     if (unzip) {
       const zip = AdmZip(exportedFile);
       zip.extractAllTo(dirPath, true);
-      const extractedFiles = zip
-        .getEntries()
-        .map(entry => path.resolve(dirPath, entry.entryName));
+      const extractedFiles = zip.getEntries().map(entry => path.resolve(dirPath, entry.entryName));
       savedFiles.push(...extractedFiles);
     } else {
-      const filename = 'fusioncharts-export.zip';
+      const filename = "fusioncharts-export.zip";
       const savedFile = path.resolve(dirPath, filename);
       fs.copySync(exportedFile, savedFile);
       savedFiles.push(savedFile);

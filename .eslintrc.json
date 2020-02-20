@@ -1,6 +1,10 @@
 {
   "extends": ["airbnb-base", "prettier"],
   "plugins": ["prettier"],
+  "env": {
+    "node": true,
+    "browser": true
+  },
   "rules": {
     "prettier/prettier": ["error"],
     "no-underscore-dangle": "off",
@@ -10,7 +14,6 @@
         "allow": ["warn", "error"]
       }
     ],
-    "linebreak-style": 0,
     "quotes": "off"
   }
 }

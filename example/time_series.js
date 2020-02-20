@@ -1,6 +1,5 @@
 const { ExportManager, ExportConfig } = require("..");
-const ftData = require("./resources/ftData");
-const ftSchema = require("./resources/ftSchema");
+
 // Instantiate ExportManager
 const exportManager = new ExportManager();
 const exportConfig = new ExportConfig();
@@ -14,8 +13,18 @@ const chartConfig = [
     creditLabel: false,
     dataSource: {
       data: {
-        data: ftData,
-        schema: ftSchema,
+        data: "https://s3.eu-central-1.amazonaws.com/fusion.store/ft/data/line-chart-with-time-axis-data.json",
+        schema: [
+          {
+            name: "Time",
+            type: "date",
+            format: "%d-%b-%y",
+          },
+          {
+            name: "Grocery Sales Value",
+            type: "number",
+          },
+        ],
       },
       caption: {
         text: "Sales Analysis json data all",
@@ -49,8 +58,8 @@ exportConfig.set("chartConfig", chartConfig);
 exportManager
   .export(exportConfig, ".", true)
   .then(exportedFiles => {
-    exportedFiles.forEach(file => console.log(file));
+    exportedFiles.forEach(file => console.warn(file));
   })
   .catch(err => {
-    console.log(err);
+    console.error(err);
   });

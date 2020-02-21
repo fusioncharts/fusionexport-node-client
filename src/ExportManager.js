@@ -6,7 +6,6 @@ const tmp = require('tmp');
 const { URL } = require('url');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
-
 const { EventEmitter } = require('events');
 const config = require('./config.js');
 
@@ -54,51 +53,6 @@ class ExportManager extends EventEmitter {
 
   static async sendToServer(serverUrl, formData) {
     return new Promise(async (resolve, reject) => {
-      //   request.post(
-      //     {
-      //       url: serverUrl,
-      //       encoding: null,
-      //       formData,
-      //     },
-      //     (err, httpResponse, body) => {
-      //       if (err) {
-      //         if (err.code === 'ECONNREFUSED') {
-      //           const connRefusedError = new Error(
-      //             `Unable to connect to FusionExport server. Make sure that your server is running on ${err.address}:${err.port}.`
-      //           );
-      //           connRefusedError.name = 'Connection Refused';
-      //           reject(connRefusedError);
-      //           return;
-      //         }
-
-      //         reject(err);
-      //         return;
-      //       }
-
-      //       if (httpResponse.statusCode === 500) {
-      //         let errMsg = body.toString();
-
-      //         try {
-      //           errMsg = JSON.parse(errMsg).error;
-      //         } catch (e) {
-      //           // continue regardless of error
-      //         }
-
-      //         const serverError = new Error(errMsg);
-      //         serverError.name = 'Server Error';
-      //         reject(serverError);
-      //         return;
-      //       }
-
-      //       if (httpResponse.statusCode !== 200) {
-      //         reject(new Error(body.toString()));
-      //         return;
-      //       }
-
-      //       resolve(body);
-      //     }
-      //   );
-
       const form = new FormData();
       Object.keys(formData).forEach(key => {
         form.append(key, formData[key]);

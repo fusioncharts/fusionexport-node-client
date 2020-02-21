@@ -28,11 +28,6 @@ const chartConfig = [
       },
       caption: {
         text: "Sales Analysis json data all",
-        style: {
-          text: {
-            fill: "#ff0000",
-          },
-        },
       },
       subCaption: {
         text: "Grocery",

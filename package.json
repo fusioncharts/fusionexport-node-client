@@ -1,6 +1,6 @@
 {
   "name": "fusionexport-node-client",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "NodeJS SDK for FusionExport. Enables exporting from FusionExport through NodeJS.",
   "keywords": [
     "fusionexport",
@@ -40,12 +40,13 @@
   "dependencies": {
     "adm-zip": "^0.4.11",
     "common-path-prefix": "^1.0.0",
+    "form-data": "^3.0.0",
     "fs-extra": "^5.0.0",
     "glob": "^7.1.2",
     "jsdom": "^11.5.1",
     "lodash": "^4.17.15",
+    "node-fetch": "^2.6.0",
     "nodemailer": "^6.3.1",
-    "request": "^2.88.0",
     "tmp": "0.0.33",
     "winston": "^2.4.0"
   },

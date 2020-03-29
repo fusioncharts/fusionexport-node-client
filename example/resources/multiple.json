@@ -1,6 +1,6 @@
 [
   {
-    "type": "usa",
+    "type": "maps/usa",
     "renderAt": "chart-container-map",
     "width": "600",
     "height": "400",
@@ -185,17 +185,17 @@
           {
             "id": "profit",
             "type": "image",
-            "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg"
+            "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg"
           },
           {
             "id": "loss",
             "type": "image",
-            "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg"
+            "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg"
           },
           {
             "id": "nochange",
             "type": "image",
-            "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/yellow_arrow_right.png"
+            "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/yellow_arrow_right.png"
           }
         ]
       }
@@ -765,10 +765,10 @@
           "renderAs": "line",
           "alpha": "1",
           "anchorRadius": "20",
-          "anchorBgColor": "transparent",
+          "anchorBgAlpha": "0",
           "anchorBorderColor": "#000000",
           "anchorBorderThickness": "0",
-          "anchorImageUrl": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/black_line.png",
+          "anchorImageUrl": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/black_line.png",
           "anchorImageScale": "100",
           "color": "#000000",
           "hoverAlpha": "0",
@@ -1218,28 +1218,28 @@
               {
                 "tooltext": "<span class='tooltip-value'>West</span><br><span class='improve-green'>AUM Improved</span><br>Current Period(Feb'11): <span class='tooltip-value'>$5.78M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$5.44M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
                 "x": "$dataset.0.set.0.endx + 2",
                 "y": "$dataset.0.set.0.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Northeast</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$4.89M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$6.62M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.1.endx + 2",
                 "y": "$dataset.0.set.1.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Southeast</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$4.56M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$5.3M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.2.endx + 2",
                 "y": "$dataset.0.set.2.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Midwest</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$1.26M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$2.17M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.3.endx + 2",
                 "y": "$dataset.0.set.3.centery-7.5"
               },
@@ -1590,35 +1590,35 @@
               {
                 "tooltext": "<span class='tooltip-value'>MFAP</span><br><span class='improve-green'>AUM Improved</span><br>Current Period(Feb'11): <span class='tooltip-value'>$4.58M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$3.63M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
                 "x": "$dataset.0.set.0.endx + 2",
                 "y": "$dataset.0.set.0.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>BankManaged</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$3.4M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$3.86M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.1.endx + 2",
                 "y": "$dataset.0.set.1.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Fixed</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$3.18M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$4.25M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.2.endx + 2",
                 "y": "$dataset.0.set.2.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Equity</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$2.85M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$4.22M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.3.endx + 2",
                 "y": "$dataset.0.set.3.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>CSP</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$2.48M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$3.56M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.4.endx + 2",
                 "y": "$dataset.0.set.4.centery-7.5"
               },
@@ -1676,7 +1676,7 @@
     "asyncRender": 1
   },
   {
-    "type": "usa",
+    "type": "maps/usa",
     "renderAt": "chart-container-map",
     "width": "600",
     "height": "400",
@@ -1861,17 +1861,17 @@
           {
             "id": "profit",
             "type": "image",
-            "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg"
+            "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg"
           },
           {
             "id": "loss",
             "type": "image",
-            "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg"
+            "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg"
           },
           {
             "id": "nochange",
             "type": "image",
-            "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/yellow_arrow_right.png"
+            "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/yellow_arrow_right.png"
           }
         ]
       }
@@ -2441,10 +2441,10 @@
           "renderAs": "line",
           "alpha": "1",
           "anchorRadius": "20",
-          "anchorBgColor": "transparent",
+          "anchorBgAlpha": "0",
           "anchorBorderColor": "#000000",
           "anchorBorderThickness": "0",
-          "anchorImageUrl": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/black_line.png",
+          "anchorImageUrl": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/black_line.png",
           "anchorImageScale": "100",
           "color": "#000000",
           "hoverAlpha": "0",
@@ -2894,28 +2894,28 @@
               {
                 "tooltext": "<span class='tooltip-value'>West</span><br><span class='improve-green'>AUM Improved</span><br>Current Period(Feb'11): <span class='tooltip-value'>$5.78M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$5.44M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
                 "x": "$dataset.0.set.0.endx + 2",
                 "y": "$dataset.0.set.0.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Northeast</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$4.89M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$6.62M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.1.endx + 2",
                 "y": "$dataset.0.set.1.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Southeast</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$4.56M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$5.3M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.2.endx + 2",
                 "y": "$dataset.0.set.2.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Midwest</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$1.26M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$2.17M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.3.endx + 2",
                 "y": "$dataset.0.set.3.centery-7.5"
               },
@@ -3266,35 +3266,35 @@
               {
                 "tooltext": "<span class='tooltip-value'>MFAP</span><br><span class='improve-green'>AUM Improved</span><br>Current Period(Feb'11): <span class='tooltip-value'>$4.58M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$3.63M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/green_arrow_up.svg",
                 "x": "$dataset.0.set.0.endx + 2",
                 "y": "$dataset.0.set.0.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>BankManaged</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$3.4M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$3.86M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.1.endx + 2",
                 "y": "$dataset.0.set.1.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Fixed</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$3.18M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$4.25M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.2.endx + 2",
                 "y": "$dataset.0.set.2.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>Equity</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$2.85M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$4.22M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.3.endx + 2",
                 "y": "$dataset.0.set.3.centery-7.5"
               },
               {
                 "tooltext": "<span class='tooltip-value'>CSP</span><br><span class='decrease-red'>AUM Worsened</span><br>Current Period(Feb'11): <span class='tooltip-value'>$2.48M</span><br>Previous Period(Jan'11): <span class='tooltip-value'>$3.56M</span>",
                 "type": "image",
-                "url": "https://www.fusioncharts.com/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
+                "url": "https://www.fusioncharts.com/demos/dashboards/wealth-management-dashboard-with-export/images/red_arrow_down.svg",
                 "x": "$dataset.0.set.4.endx + 2",
                 "y": "$dataset.0.set.4.centery-7.5"
               },

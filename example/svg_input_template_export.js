@@ -1,4 +1,4 @@
-// Exporting a chart
+// Converting an SVG image to PNG/JPEG/PDF
 
 const path = require("path");
 
@@ -11,7 +11,7 @@ const exportManager = new ExportManager();
 // Instantiate ExportConfig and add the required configurations
 const exportConfig = new ExportConfig();
 
-exportConfig.set("chartConfig", path.join(__dirname, "resources", "single.json"));
+exportConfig.set("inputSVG", path.join(__dirname, "resources", "vector.svg"));
 
 // provide the export config
 exportManager

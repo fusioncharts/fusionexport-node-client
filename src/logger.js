@@ -1,9 +1,9 @@
-const winston = require('winston');
+const winston = require("winston");
 
-const logger = new (winston.Logger)({
+const logger = new winston.Logger({
   transports: [
-    new (winston.transports.Console)({
-      level: 'error',
+    new winston.transports.Console({
+      level: "error",
     }),
   ],
 });

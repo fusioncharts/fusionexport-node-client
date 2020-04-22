@@ -1,10 +1,11 @@
-// const WebSocket = require('ws');
 const path = require("path");
 const fs = require("fs-extra");
 const _ = require("lodash");
 const AdmZip = require("adm-zip");
 const tmp = require("tmp");
-const request = require("request");
+const { URL } = require("url");
+const fetch = require("node-fetch");
+const FormData = require("form-data");
 const { EventEmitter } = require("events");
 const config = require("./config.js");
 
@@ -16,88 +17,92 @@ class ExportManager extends EventEmitter {
   }
 
   export(exportConfig, dirPath = ".", unzip = false) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
-      ExportManager.sendToServer(this.config.url, formData).then((content) => {
+
+      try {
+        const content = await ExportManager.sendToServer(this.config.url, formData);
         const zipFile = ExportManager.saveZip(content);
         const files = ExportManager.saveExportedFiles(zipFile, dirPath, unzip);
         resolve(files);
-      }).catch(err => reject(err));
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
   exportAsStream(exportConfig) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
-      ExportManager.sendToServer(this.config.url, formData).then((content) => {
+
+      try {
+        const content = await ExportManager.sendToServer(this.config.url, formData);
         const streams = ExportManager.unzipAsStream(content);
         resolve(streams);
-      }).catch(err => reject(err));
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
-  static sendToServer(serverUrl, formData) {
-    return new Promise((resolve, reject) => {
-      request.post(
-        {
-          url: serverUrl,
-          encoding: null,
-          formData,
-        },
-        (err, httpResponse, body) => {
-          if (err) {
-            if (err.code === "ECONNREFUSED") {
-              const connRefusedError = new Error(
-                `Unable to connect to FusionExport server. Make sure that your server is running on ${err.address}:${err.port}.`
-              );
-              connRefusedError.name = "Connection Refused";
-              reject(connRefusedError);
-              return;
-            }
+  static async sendToServer(serverUrl, formData) {
+    return new Promise(async (resolve, reject) => {
+      const form = new FormData();
+      Object.keys(formData).forEach(key => {
+        form.append(key, formData[key]);
+      });
 
-            reject(err);
-            return;
-          }
-
-          if (httpResponse.statusCode === 500) {
-            let errMsg = body.toString();
-
-            try {
-              errMsg = JSON.parse(errMsg).error;
-            } catch (e) {
-              // continue regardless of error
-            }
-
-            const serverError = new Error(errMsg);
+      fetch(serverUrl, {
+        method: "POST",
+        body: form,
+      })
+        .then(async res => {
+          if (res.status === 500) {
+            const { error = "" } = await res.json();
+            const serverError = new Error(error);
             serverError.name = "Server Error";
-            reject(serverError);
+            return reject(serverError);
+          }
+
+          if (res.status === 200) {
+            return resolve(await res.buffer());
+          }
+
+          if (res.status === 404) {
+            const notFoundError = new Error("API URL not found");
+            notFoundError.name = "URL Not Found Error";
+            return reject(notFoundError);
+          }
+
+          return reject(new Error(await res.json().error));
+        })
+        .catch(err => {
+          if (err.code === "ECONNREFUSED") {
+            const url = new URL(serverUrl);
+            const connRefusedError = new Error(
+              `Unable to connect to FusionExport server. Make sure that your server is running on ${url.host}`
+            );
+            connRefusedError.name = "Connection Refused";
+            reject(connRefusedError);
             return;
           }
 
-          if (httpResponse.statusCode !== 200) {
-            reject(new Error(body.toString()));
-            return;
-          }
-
-          resolve(body);
-        },
-      );
+          reject(err.message);
+        });
     });
   }
 
   static unzipAsStream(buf) {
     const zip = new AdmZip(buf);
     const zipEntries = zip.getEntries();
-
     const contents = {};
-    // eslint-disable-next-line no-plusplus
-    for (let i = 0; i < zipEntries.length; i++) {
+    for (let i = 0; i < zipEntries.length; i += 1) {
       const file = zip.readFile(zipEntries[i]);
       contents[zipEntries[i].entryName] = file;
     }
@@ -122,12 +127,10 @@ class ExportManager extends EventEmitter {
     if (unzip) {
       const zip = AdmZip(exportedFile);
       zip.extractAllTo(dirPath, true);
-      const extractedFiles = zip
-        .getEntries()
-        .map(entry => path.resolve(dirPath, entry.entryName));
+      const extractedFiles = zip.getEntries().map(entry => path.resolve(dirPath, entry.entryName));
       savedFiles.push(...extractedFiles);
     } else {
-      const filename = 'fusioncharts-export.zip';
+      const filename = "fusioncharts-export.zip";
       const savedFile = path.resolve(dirPath, filename);
       fs.copySync(exportedFile, savedFile);
       savedFiles.push(savedFile);

@@ -24,6 +24,7 @@ const mapMetadataTypeNameToJSValue = {
   string: '',
   boolean: true,
   integer: 1,
+  object:[]
 };
 
 function booleanConverter(value) {
@@ -81,6 +82,7 @@ const CLIENTNAME = 'clientName';
 const PLATFORM = 'platform';
 const TEMPLATE = 'templateFilePath';
 const RESOURCES = 'resourceFilePath';
+const FONTS = 'fontDirPath';
 
 
 class ExportConfig {
@@ -123,7 +125,6 @@ class ExportConfig {
   checkTypings(configName, configValue) {
     const reqdTyping = this.typings[configName];
     const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
-
     if (typeof configValue !== typeof valueOfType) {
       throw new Error(`${configName} of type ${typeof configValue} is not allowed`);
     }
@@ -230,9 +231,10 @@ class ExportConfig {
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
+      const { contentZipbase64, templatePathWithinZip, fontDirPathWithinZip } = clonedObj.createBase64ZippedTemplate();
       clonedObj.set(RESOURCES, contentZipbase64);
       clonedObj.set(TEMPLATE, templatePathWithinZip);
+      clonedObj.set(FONTS, fontDirPathWithinZip);
     }
 
     return clonedObj;
@@ -247,6 +249,7 @@ class ExportConfig {
     const listExtractedPaths = this.findResources();
     let { baseDirectoryPath, listResourcePaths } = this.resolveResourceGlobFiles();
     const templateFilePath = this.get(TEMPLATE);
+    const fontDirPath = this.get(FONTS);
 
     // If basepath is not provided, find it
     // from common ancestor directory of extracted file paths plus template
@@ -254,6 +257,13 @@ class ExportConfig {
       const listExtractedPathsPlusTemplate = [];
       Array.prototype.push.apply(listExtractedPathsPlusTemplate, listExtractedPaths);
       listExtractedPathsPlusTemplate.push(templateFilePath);
+
+      var fontFilePaths=[];
+      for (let index = 0; index < fontDirPath.length; index++) {
+        const element = fontDirPath[index];
+        listExtractedPathsPlusTemplate.push(element);
+        fontFilePaths.push(element)
+      }
 
       const commonDirectoryPath = getCommonAncestorDirectory(listExtractedPathsPlusTemplate);
 
@@ -265,11 +275,17 @@ class ExportConfig {
       .filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
 
     const zipFile = ExportConfig.generateZip([
-      ...listExtractedPaths, ...listResourcePaths, templateFilePath], baseDirectoryPath);
+      ...listExtractedPaths, ...listResourcePaths, templateFilePath].concat(fontFilePaths), baseDirectoryPath);
+      var fontDirPathWithinZip=[];
+      for (let index = 0; index < fontFilePaths.length; index++) {
+        const element = fontFilePaths[index];
+        fontDirPathWithinZip.push(getRelativePathFrom(element, baseDirectoryPath))
+      }
 
     return {
       contentZipbase64: readFileContent(path.resolve(zipFile.name), true),
       templatePathWithinZip: getRelativePathFrom(templateFilePath, baseDirectoryPath),
+      fontDirPathWithinZip: fontDirPathWithinZip,
     };
   }
 

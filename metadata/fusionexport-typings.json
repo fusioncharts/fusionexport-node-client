@@ -46,5 +46,8 @@
     },
     "resourceFilePath": {
         "type": "string"
+    },
+    "fontDirPath":{
+        "type": "object"
     }
 }

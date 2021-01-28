@@ -82,7 +82,6 @@ const CLIENTNAME = 'clientName';
 const PLATFORM = 'platform';
 const TEMPLATE = 'templateFilePath';
 const RESOURCES = 'resourceFilePath';
-const FONTS = 'fontDirPath';
 
 
 class ExportConfig {
@@ -231,10 +230,9 @@ class ExportConfig {
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const { contentZipbase64, templatePathWithinZip, fontDirPathWithinZip } = clonedObj.createBase64ZippedTemplate();
+      const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
       clonedObj.set(RESOURCES, contentZipbase64);
       clonedObj.set(TEMPLATE, templatePathWithinZip);
-      clonedObj.set(FONTS, fontDirPathWithinZip);
     }
 
     return clonedObj;
@@ -249,7 +247,6 @@ class ExportConfig {
     const listExtractedPaths = this.findResources();
     let { baseDirectoryPath, listResourcePaths } = this.resolveResourceGlobFiles();
     const templateFilePath = this.get(TEMPLATE);
-    const fontDirPath = this.get(FONTS);
 
     // If basepath is not provided, find it
     // from common ancestor directory of extracted file paths plus template
@@ -257,13 +254,6 @@ class ExportConfig {
       const listExtractedPathsPlusTemplate = [];
       Array.prototype.push.apply(listExtractedPathsPlusTemplate, listExtractedPaths);
       listExtractedPathsPlusTemplate.push(templateFilePath);
-
-      var fontFilePaths=[];
-      for (let index = 0; index < fontDirPath.length; index++) {
-        const element = fontDirPath[index];
-        listExtractedPathsPlusTemplate.push(element);
-        fontFilePaths.push(element)
-      }
 
       const commonDirectoryPath = getCommonAncestorDirectory(listExtractedPathsPlusTemplate);
 
@@ -275,17 +265,11 @@ class ExportConfig {
       .filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
 
     const zipFile = ExportConfig.generateZip([
-      ...listExtractedPaths, ...listResourcePaths, templateFilePath].concat(fontFilePaths), baseDirectoryPath);
-      var fontDirPathWithinZip=[];
-      for (let index = 0; index < fontFilePaths.length; index++) {
-        const element = fontFilePaths[index];
-        fontDirPathWithinZip.push(getRelativePathFrom(element, baseDirectoryPath))
-      }
+      ...listExtractedPaths, ...listResourcePaths, templateFilePath], baseDirectoryPath);
 
     return {
       contentZipbase64: readFileContent(path.resolve(zipFile.name), true),
       templatePathWithinZip: getRelativePathFrom(templateFilePath, baseDirectoryPath),
-      fontDirPathWithinZip: fontDirPathWithinZip,
     };
   }
 
@@ -295,10 +279,63 @@ class ExportConfig {
     if (templateFilePath !== undefined) {
       const templateDirectory = path.dirname(templateFilePath);
       const html = fs.readFileSync(path.resolve(templateFilePath));
+      
       const { JSDOM } = jsdom;
       const { window: { document } } = new JSDOM(html);
 
       const links = [...document.querySelectorAll('link')].map(l => l.href);
+      const styles = [...document.styleSheets];
+      
+      let fontFileURLs=[];
+      for(var i=0; i<styles.length; i++) {
+        var sheet = styles[i];
+          const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            let m;
+            let extractedFontURLs = []
+            while ((m = regex.exec(sheet)) !== null) {
+                // This is necessary to avoid infinite loops with zero-width matches
+                if (m.index === regex.lastIndex) {
+                    regex.lastIndex++;
+                }
+                let string = m[1].replace(/^"(.*)"$/, '$1')
+                if(!path.extname(string)){
+                  string = string + "." + m[3]
+                }
+                extractedFontURLs.push(string)
+            }
+          fontFileURLs.push(extractedFontURLs.filter(isLocalResource).map(url =>
+              path.resolve(templateDirectory,url)))
+      }
+      
+      links.forEach(link => {
+        if(path.extname(link) == ".css"){
+          const resolvedLink = path.resolve(link);
+         
+          if(resolvedLink !== undefined && fs.existsSync(resolvedLink)){
+            const linkDirectory = path.dirname(resolvedLink);
+            const css = fs.readFileSync(path.resolve(linkDirectory,resolvedLink),"utf8");
+            const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            let m;
+            let extractedFontURLs = []
+            while ((m = regex.exec(css)) !== null) {
+                // This is necessary to avoid infinite loops with zero-width matches
+                if (m.index === regex.lastIndex) {
+                    regex.lastIndex++;
+                }
+                let string = m[1].replace(/^"(.*)"$/, '$1')
+                if(!path.extname(string)){
+                  string = string + "." + m[3]
+                }
+                extractedFontURLs.push(string)
+            }
+            fontFileURLs.push(extractedFontURLs.filter(isLocalResource).map(url =>
+              path.resolve(linkDirectory,url)))
+          }
+        }
+      })
+      
+      var mergedFontFileURLs = [].concat.apply([], fontFileURLs);
+
       const scripts = [...document.querySelectorAll('script')].map(s => s.src);
       const imgs = [...document.querySelectorAll('img')].map(i => i.src);
 
@@ -308,8 +345,7 @@ class ExportConfig {
         path.resolve(templateDirectory, script));
       const imgURLs = imgs.filter(isLocalResource).map(img =>
         path.resolve(templateDirectory, img));
-
-      return [...linkURLs, ...scriptURLs, ...imgURLs];
+      return [...linkURLs, ...scriptURLs, ...imgURLs, ...mergedFontFileURLs];
     }
     return [];
   }

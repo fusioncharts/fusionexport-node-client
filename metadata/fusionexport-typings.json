@@ -89,5 +89,9 @@
   },
   "resourceFilePath": {
     "supportedTypes": ["string"]
+  },
+  "minifyResources": {
+    "supportedTypes": ["string", "boolean"],
+    "converter": "BooleanToStringConverter"
   }
 }

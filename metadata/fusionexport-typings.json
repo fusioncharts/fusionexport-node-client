@@ -90,6 +90,10 @@
   "resourceFilePath": {
     "supportedTypes": ["string"]
   },
+  "fontDirPath":{
+      "type": "object"
+    }
+  },
   "minifyResources": {
     "supportedTypes": ["string", "boolean"],
     "converter": "BooleanToStringConverter"

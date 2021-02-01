@@ -18,8 +18,16 @@ const {
   humanizeArray,
 } = require("./utils");
 
-const metadataFolderPath = path.join(__dirname, "../metadata");
-const typingsFilePath = path.join(metadataFolderPath, "fusionexport-typings.json");
+const metadataFolderPath = path.join(__dirname, '../metadata');
+const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
+const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
+
+const mapMetadataTypeNameToJSValue = {
+  string: '',
+  boolean: true,
+  integer: 1,
+  object:[]
+};
 
 function booleanConverter(value) {
   if (typeof value === "string") {
@@ -217,11 +225,9 @@ class ExportConfig {
 
   checkTypings(configName) {
     const reqdTyping = this.typings[configName];
-
-    if (!reqdTyping) {
-      const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = "Invalid Configuration";
-      throw invalidConfigError;
+    const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
+    if (typeof configValue !== typeof valueOfType) {
+      throw new Error(`${configName} of type ${typeof configValue} is not allowed`);
     }
   }
 
@@ -481,20 +487,75 @@ class ExportConfig {
     if (templateFilePath !== undefined) {
       const templateDirectory = path.dirname(templateFilePath);
       const html = fs.readFileSync(path.resolve(templateFilePath));
+      
       const { JSDOM } = jsdom;
       const {
         window: { document },
       } = new JSDOM(html);
 
-      const links = [...document.querySelectorAll("link")].map(l => l.href);
-      const scripts = [...document.querySelectorAll("script")].map(s => s.src);
-      const imgs = [...document.querySelectorAll("img")].map(i => i.src);
+      const links = [...document.querySelectorAll('link')].map(l => l.href);
+      const styles = [...document.styleSheets];
+      
+      let fontFileURLs=[];
+      for(var i=0; i<styles.length; i++) {
+        var sheet = styles[i];
+          const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            let m;
+            let extractedFontURLs = []
+            while ((m = regex.exec(sheet)) !== null) {
+                // This is necessary to avoid infinite loops with zero-width matches
+                if (m.index === regex.lastIndex) {
+                    regex.lastIndex++;
+                }
+                let string = m[1].replace(/^"(.*)"$/, '$1')
+                if(!path.extname(string)){
+                  string = string + "." + m[3]
+                }
+                extractedFontURLs.push(string)
+            }
+          fontFileURLs.push(extractedFontURLs.filter(isLocalResource).map(url =>
+              path.resolve(templateDirectory,url)))
+      }
+      
+      links.forEach(link => {
+        if(path.extname(link) == ".css"){
+          const resolvedLink = path.resolve(link);
+         
+          if(resolvedLink !== undefined && fs.existsSync(resolvedLink)){
+            const linkDirectory = path.dirname(resolvedLink);
+            const css = fs.readFileSync(path.resolve(linkDirectory,resolvedLink),"utf8");
+            const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            let m;
+            let extractedFontURLs = []
+            while ((m = regex.exec(css)) !== null) {
+                // This is necessary to avoid infinite loops with zero-width matches
+                if (m.index === regex.lastIndex) {
+                    regex.lastIndex++;
+                }
+                let string = m[1].replace(/^"(.*)"$/, '$1')
+                if(!path.extname(string)){
+                  string = string + "." + m[3]
+                }
+                extractedFontURLs.push(string)
+            }
+            fontFileURLs.push(extractedFontURLs.filter(isLocalResource).map(url =>
+              path.resolve(linkDirectory,url)))
+          }
+        }
+      })
+      
+      var mergedFontFileURLs = [].concat.apply([], fontFileURLs);
 
-      const linkURLs = links.filter(isLocalResource).map(link => path.resolve(templateDirectory, link));
-      const scriptURLs = scripts.filter(isLocalResource).map(script => path.resolve(templateDirectory, script));
-      const imgURLs = imgs.filter(isLocalResource).map(img => path.resolve(templateDirectory, img));
+      const scripts = [...document.querySelectorAll('script')].map(s => s.src);
+      const imgs = [...document.querySelectorAll('img')].map(i => i.src);
 
-      return [...linkURLs, ...scriptURLs, ...imgURLs];
+      const linkURLs = links.filter(isLocalResource).map(link =>
+        path.resolve(templateDirectory, link));
+      const scriptURLs = scripts.filter(isLocalResource).map(script =>
+        path.resolve(templateDirectory, script));
+      const imgURLs = imgs.filter(isLocalResource).map(img =>
+        path.resolve(templateDirectory, img));
+      return [...linkURLs, ...scriptURLs, ...imgURLs, ...mergedFontFileURLs];
     }
     return [];
   }

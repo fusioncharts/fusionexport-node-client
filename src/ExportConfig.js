@@ -6,6 +6,7 @@ const jsdom = require("jsdom");
 const tmp = require("tmp");
 const AdmZip = require("adm-zip");
 const glob = require("glob");
+const minifyFiles = require('sync-rpc')(__dirname+'/minifyfile.js');
 
 const {
   getCommonAncestorDirectory,
@@ -138,6 +139,7 @@ const PLATFORM = "platform";
 const TEMPLATE = "templateFilePath";
 const ASYNCCAPTURE = "asyncCapture";
 const PAYLOAD = "payload";
+const MINIFY = "minifyResources";
 
 class ExportConfig {
   constructor() {
@@ -366,7 +368,7 @@ class ExportConfig {
     }
 
     if (zipBag.length > 0) {
-      const zipFile = ExportConfig.generateZip(zipBag);
+      const zipFile = ExportConfig.generateZip(zipBag, this.get(MINIFY));
       clonedObj.set(PAYLOAD, zipFile);
     }
 
@@ -427,6 +429,9 @@ class ExportConfig {
     const listExtractedPaths = this.findResources();
     let { baseDirectoryPath, listResourcePaths } = this.resolveResourceGlobFiles();
     const templateFilePath = this.get(TEMPLATE);
+    const isMinified = this.get(MINIFY)==="true";
+    const minifiedHash = `.min-fusionexport-${Date.now()}`;
+    const minifiedExtension = isMinified ?minifiedHash :"";
 
     // If basepath is not provided, find it
     // from common ancestor directory of extracted file paths plus template
@@ -448,13 +453,22 @@ class ExportConfig {
       baseDirectoryPath
     );
 
-    const prefixedZipPaths = zipPaths.map(zipPath => ({
-      internalPath: path.join("template", zipPath.internalPath),
-      externalPath: zipPath.externalPath,
-    }));
+    const prefixedZipPaths = zipPaths.map(zipPath => {
+      const internalDir = path.dirname(zipPath.internalPath);
+      const fileExtension = path.extname(zipPath.internalPath);
+      const fileName = path.basename(zipPath.internalPath, fileExtension);
+      return { 
+        internalPath: path.join("template", `${internalDir}/${fileName}${minifiedExtension}${fileExtension}`),
+        externalPath: zipPath.externalPath,
+       }
+    });
 
-    const templatePathWithinZip = path.join("template", getRelativePathFrom(templateFilePath, baseDirectoryPath));
+    const rawTemplatePath = path.dirname(templateFilePath);
+    const templateExtension = path.extname(templateFilePath);
+    const templateFileName = path.basename(templateFilePath, templateExtension);
 
+    const templatePathWithinZip = path.join("template", getRelativePathFrom(`${rawTemplatePath}/${templateFileName}${minifiedExtension}${templateExtension}`, baseDirectoryPath));
+    
     return {
       zipPaths: prefixedZipPaths,
       templatePathWithinZip,
@@ -542,20 +556,21 @@ class ExportConfig {
   static filterNEFiles(fileBag) {
     return fileBag.filter(file => {
       if (fs.existsSync(file.externalPath)) return true;
-      console.warn(`File not found: ${file.externalPath}. Ignoring file.`);
+      console.warn(`File not found: ${originalPath}. Ignoring file.`);
       return false;
     });
   }
 
-  static generateZip(fileBag) {
+  static generateZip(fileBag, minify) {
     const zip = new AdmZip();
+    const isMinified = minify==="true";
 
     const _fileBag = ExportConfig.filterNEFiles(fileBag);
 
     _fileBag.forEach(file => {
-      const internalDir = path.dirname(file.internalPath);
-      const internalName = path.basename(file.internalPath);
-      zip.addLocalFile(file.externalPath, internalDir, internalName);
+      const processedFile = isMinified ?minifyFiles(file) :file;
+      zip.addLocalFile(processedFile.externalPath, path.dirname(file.internalPath), path.basename(file.internalPath));
+      if (isMinified) fs.unlinkSync(processedFile.externalPath);
     });
 
     const zipFile = tmp.fileSync({ postfix: ".zip" });

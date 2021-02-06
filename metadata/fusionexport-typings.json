@@ -1,53 +1,100 @@
 {
-    "chartConfig": {
-        "type": "string"
-    },
-    "inputSVG": {
-        "type": "string"
-    },
-    "templateFilePath": {
-        "type": "string"
-    },
-    "callbackFilePath": {
-        "type": "string"
-    },
-    "asyncCapture": {
-        "type": "boolean",
-        "converter": "BooleanConverter"
-    },
-    "maxWaitForCaptureExit": {
-        "type": "integer",
-        "converter": "NumberConverter"
-    },
-    "dashboardLogo": {
-        "type": "string"
-    },
-    "dashboardHeading": {
-        "type": "string"
-    },
-    "dashboardSubheading": {
-        "type": "string"
-    },
-    "outputFile": {
-        "type": "string"
-    },
-    "type": {
-        "type": "string"
-    },
-    "quality": {
-        "type": "string"
-    },
-    "outputFileDefinition": {
-        "type": "string"
-    },
-    "exportAsZip": {
-        "type": "boolean",
-        "converter": "BooleanConverter"
-    },
-    "resourceFilePath": {
-        "type": "string"
-    },
-    "fontDirPath":{
-        "type": "object"
-    }
+  "chartConfig": {
+    "supportedTypes": ["string", "object"],
+    "converter": "ChartConfigConverter"
+  },
+  "inputSVG": {
+    "supportedTypes": ["string"]
+  },
+  "template": {
+    "supportedTypes": ["string"]
+  },
+  "templateFilePath": {
+    "supportedTypes": ["string"]
+  },
+  "templateWidth": {
+    "supportedTypes": ["string", "number"],
+    "converter": "NumberConverter"
+  },
+  "templateHeight": {
+    "supportedTypes": ["string", "number"],
+    "converter": "NumberConverter"
+  },
+  "templateFormat": {
+    "type": "enum",
+    "supportedTypes": ["string"],
+    "converter": "EnumConverter",
+    "dataset": ["Letter", "Legal", "Tabloid", "Ledger", "A0", "A1", "A2", "A3", "A4", "A5"]
+  },
+  "callbackFilePath": {
+    "supportedTypes": ["string"]
+  },
+  "asyncCapture": {
+    "supportedTypes": ["string", "number", "boolean"],
+    "converter": "BooleanConverter"
+  },
+  "maxWaitForCaptureExit": {
+    "supportedTypes": ["string", "number"],
+    "converter": "NumberConverter"
+  },
+  "dashboardLogo": {
+    "supportedTypes": ["string"]
+  },
+  "dashboardHeading": {
+    "supportedTypes": ["string"]
+  },
+  "dashboardSubheading": {
+    "supportedTypes": ["string"]
+  },
+  "outputFile": {
+    "supportedTypes": ["string"]
+  },
+  "type": {
+    "supportedTypes": ["string"],
+    "converter": "EnumConverter",
+    "dataset": ["jpeg", "jpg", "png", "pdf", "svg", "html", "csv", "xls", "xlsx"]
+  },
+  "quality": {
+    "supportedTypes": ["string"],
+    "converter": "EnumConverter",
+    "dataset": ["good", "better", "best"]
+  },
+  "orientation": {
+    "supportedTypes": ["string"],
+    "converter": "EnumConverter",
+    "dataset": ["portrait", "landscape"]
+  },
+  "headerEnabled": {
+    "supportedTypes": ["string", "boolean"],
+    "converter": "BooleanToStringConverter"
+  },
+  "footerEnabled": {
+    "supportedTypes": ["string", "boolean"],
+    "converter": "BooleanToStringConverter"
+  },
+  "headerComponents": {
+    "supportedTypes": ["string", "object"],
+    "converter": "ObjectConverter"
+  },
+  "footerComponents": {
+    "supportedTypes": ["string", "object"],
+    "converter": "ObjectConverter"
+  },
+  "pageMargin": {
+    "supportedTypes": ["string", "object"],
+    "converter": "ObjectConverter"
+  },
+  "outputFileDefinition": {
+    "supportedTypes": ["string"]
+  },
+  "resourceFilePath": {
+    "supportedTypes": ["string"]
+  },
+  "fontDirPath":{
+    "type": "object"
+  },
+  "minifyResources": {
+    "supportedTypes": ["string", "boolean"],
+    "converter": "BooleanToStringConverter"
+  }
 }

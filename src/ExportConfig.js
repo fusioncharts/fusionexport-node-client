@@ -1,11 +1,12 @@
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
-const _ = require('lodash');
-const jsdom = require('jsdom');
-const tmp = require('tmp');
-const JSZip = require('node-zip');
-const glob = require('glob');
+const os = require("os");
+const fs = require("fs");
+const path = require("path");
+const _ = require("lodash");
+const jsdom = require("jsdom");
+const tmp = require("tmp");
+const AdmZip = require("adm-zip");
+const glob = require("glob");
+const minifyFiles = require('sync-rpc')(__dirname+'/minifyfile.js');
 
 const {
   getCommonAncestorDirectory,
@@ -14,7 +15,8 @@ const {
   isLocalResource,
   readFileContent,
   diffArrays,
-} = require('./utils');
+  humanizeArray,
+} = require("./utils");
 
 const metadataFolderPath = path.join(__dirname, '../metadata');
 const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
@@ -28,15 +30,15 @@ const mapMetadataTypeNameToJSValue = {
 };
 
 function booleanConverter(value) {
-  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+  if (typeof value === "string") {
     const stringValue = value.toLowerCase();
-    if (stringValue === 'true') {
+    if (stringValue === "true") {
       return true;
-    } else if (stringValue === 'false') {
+    } else if (stringValue === "false") {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === "number") {
     const numberValue = value;
     if (numberValue === 1) {
       return true;
@@ -44,15 +46,25 @@ function booleanConverter(value) {
       return false;
     }
     throw Error("Couldn't convert to boolean");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.boolean) {
+  } else if (typeof value === "boolean") {
     return value;
   }
 
   throw Error("Couldn't convert to boolean");
 }
 
+function booleanToStringConverter(value) {
+  if (typeof value === "string") {
+    if (value === "true") return value;
+    return "false";
+  } else if (typeof value === "boolean") {
+    return `${value}`;
+  }
+  throw Error("Couldn't convert to boolean");
+}
+
 function numberConverter(value) {
-  if (typeof value === typeof mapMetadataTypeNameToJSValue.string) {
+  if (typeof value === "string") {
     const stringValue = value;
     const numberValue = Number(stringValue);
 
@@ -60,7 +72,7 @@ function numberConverter(value) {
       return numberValue;
     }
     throw Error("Couldn't convert to number");
-  } else if (typeof value === typeof mapMetadataTypeNameToJSValue.number) {
+  } else if (typeof value === "number") {
     const numberValue = value;
     return numberValue;
   }
@@ -68,39 +80,92 @@ function numberConverter(value) {
   throw Error("Couldn't convert to number");
 }
 
+function enumConverter(value, dataset) {
+  const lowerCasedDataset = dataset.map(d => d.toLowerCase());
+  const lowerCasedValue = value.toLowerCase();
+
+  if (!lowerCasedDataset.includes(lowerCasedValue)) {
+    const enumParseError = new Error(
+      `${value} is not in supported set. Supported values are ${humanizeArray(dataset)}`
+    );
+    enumParseError.name = "Enum Parse Error";
+    enumParseError.dataset = dataset;
+    throw enumParseError;
+  }
+
+  return lowerCasedValue;
+}
+
+function objectConverter(value) {
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value);
+  } else if (typeof value === "string") {
+    return value;
+  }
+
+  return String(value);
+}
+
+function chartConfigConverter(value) {
+  if (typeof value === "object") {
+    let configList = value;
+
+    if (!Array.isArray(value)) {
+      configList = [value];
+    }
+
+    configList.forEach(config => {
+      if (!config.dataSource || !config.type) {
+        const invalidJSONError = new Error("JSON structure is invalid. Please check your JSON data.");
+        invalidJSONError.name = "Invalid JSON";
+        throw invalidJSONError;
+      }
+    });
+
+    return JSON.stringify(configList);
+  }
+
+  return value;
+}
+
 const mapConverterNameToConverter = {
   BooleanConverter: booleanConverter,
+  BooleanToStringConverter: booleanToStringConverter,
   NumberConverter: numberConverter,
+  EnumConverter: enumConverter,
+  ChartConfigConverter: chartConfigConverter,
+  ObjectConverter: objectConverter,
 };
 
-const CHARTCONFIG = 'chartConfig';
-const INPUTSVG = 'inputSVG';
-const CALLBACKS = 'callbackFilePath';
-const DASHBOARDLOGO = 'dashboardLogo';
-const OUTPUTFILEDEFINITION = 'outputFileDefinition';
-const CLIENTNAME = 'clientName';
-const PLATFORM = 'platform';
-const TEMPLATE = 'templateFilePath';
-const RESOURCES = 'resourceFilePath';
-
+const CHARTCONFIG = "chartConfig";
+const INPUTSVG = "inputSVG";
+const CALLBACKS = "callbackFilePath";
+const DASHBOARDLOGO = "dashboardLogo";
+const OUTPUTFILEDEFINITION = "outputFileDefinition";
+const CLIENTNAME = "clientName";
+const PLATFORM = "platform";
+const TEMPLATE = "templateFilePath";
+const ASYNCCAPTURE = "asyncCapture";
+const PAYLOAD = "payload";
+const MINIFY = "minifyResources";
 
 class ExportConfig {
   constructor() {
     this.configs = new Map();
-    this.metadata = JSON.parse(fs.readFileSync(metadataFilePath));
     this.typings = JSON.parse(fs.readFileSync(typingsFilePath));
     this.disableTypeCheck = false;
-    this.clientName = 'NODE';
+    this.clientName = "NODE";
   }
 
   set(name, value) {
     const configName = name;
     let configValue = value;
-    if (typeof name !== 'string') {
-      throw new Error('Only strings are allowed as a key name');
+    if (typeof name !== "string") {
+      throw new Error("Only strings are allowed as a key name");
     }
 
     if (!this.disableTypeCheck) {
+      this.checkInputTypings(configName, configValue);
       configValue = this.tryConvertType(configName, configValue);
       this.checkTypings(configName, configValue);
     }
@@ -109,19 +174,56 @@ class ExportConfig {
     return this;
   }
 
+  checkInputTypings(configName, configValue) {
+    const reqdTyping = this.typings[configName];
+
+    if (!reqdTyping) {
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = "Invalid Configuration";
+      throw invalidConfigError;
+    }
+
+    const isSupported = reqdTyping.supportedTypes.some(type => {
+      // eslint-disable-next-line valid-typeof
+      if (typeof configValue === type) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!isSupported) {
+      const invalidDataTypeError = new Error(
+        `${configName} of type ${typeof configValue} is unsupported. Supported data types are ${humanizeArray(
+          reqdTyping.supportedTypes
+        )}.`
+      );
+      invalidDataTypeError.name = "Invalid Data Type";
+      throw invalidDataTypeError;
+    }
+  }
+
   tryConvertType(configName, configValue) {
     const reqdTyping = this.typings[configName];
-    reqdTyping.converter = reqdTyping.converter || '';
-    const converterName = reqdTyping.converter.toLowerCase();
+
+    if (!reqdTyping) {
+      const invalidConfigError = new Error(`${configName} is not allowed`);
+      invalidConfigError.name = "Invalid Configuration";
+      throw invalidConfigError;
+    }
+
+    const converterName = reqdTyping.converter || "";
     const converterFunction = mapConverterNameToConverter[converterName];
+    const { dataset } = reqdTyping;
 
     if (converterFunction !== undefined) {
-      return converterFunction(configValue);
+      return converterFunction(configValue, dataset);
     }
+
     return configValue;
   }
 
-  checkTypings(configName, configValue) {
+  checkTypings(configName) {
     const reqdTyping = this.typings[configName];
     const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
     if (typeof configValue !== typeof valueOfType) {
@@ -186,67 +288,156 @@ class ExportConfig {
     const clonedObj = _.cloneDeep(this);
     clonedObj.disableTypeCheck = true;
 
-    clonedObj.set(CLIENTNAME, this.clientName);
-    clonedObj.set(PLATFORM, os.platform());
+    if (clonedObj.get("templateFilePath") && clonedObj.get("template")) {
+      console.warn("Both 'templateFilePath' and 'template' is provided. 'templateFilePath' will be ignored.");
+      clonedObj.remove("templateFilePath");
+    }
+
+    const zipBag = [];
 
     if (clonedObj.has(CHARTCONFIG)) {
-      const oldValue = clonedObj.get(CHARTCONFIG);
+      const chartConfigVal = clonedObj.get(CHARTCONFIG);
       clonedObj.remove(CHARTCONFIG);
 
-      let newValue = oldValue;
-      if (oldValue.endsWith('.json')) {
-        newValue = readFileContent(oldValue, false);
+      if (chartConfigVal.endsWith(".json")) {
+        this.set(CHARTCONFIG, readFileContent(chartConfigVal, false));
       }
 
-      clonedObj.set(CHARTCONFIG, newValue);
+      clonedObj.set(CHARTCONFIG, this.get(CHARTCONFIG));
     }
 
     if (clonedObj.has(INPUTSVG)) {
       const oldValue = clonedObj.get(INPUTSVG);
       clonedObj.remove(INPUTSVG);
 
-      clonedObj.set(INPUTSVG, readFileContent(oldValue, true));
+      const internalFilePath = "inputSVG.svg";
+      zipBag.push({
+        internalPath: internalFilePath,
+        externalPath: oldValue,
+      });
+      clonedObj.set(INPUTSVG, internalFilePath);
     }
 
     if (clonedObj.has(CALLBACKS)) {
       const oldValue = clonedObj.get(CALLBACKS);
       clonedObj.remove(CALLBACKS);
 
-      clonedObj.set(CALLBACKS, readFileContent(oldValue, true));
+      const internalFilePath = "callbackFile.js";
+      zipBag.push({
+        internalPath: internalFilePath,
+        externalPath: oldValue,
+      });
+      clonedObj.set(CALLBACKS, internalFilePath);
     }
 
     if (clonedObj.has(DASHBOARDLOGO)) {
       const oldValue = clonedObj.get(DASHBOARDLOGO);
       clonedObj.remove(DASHBOARDLOGO);
 
-      clonedObj.set(DASHBOARDLOGO, readFileContent(oldValue, true));
+      const ext = path.extname(oldValue);
+      const internalFilePath = `dashboardLogo${ext}`;
+      zipBag.push({
+        internalPath: internalFilePath,
+        externalPath: oldValue,
+      });
+      clonedObj.set(DASHBOARDLOGO, internalFilePath);
     }
 
     if (clonedObj.has(OUTPUTFILEDEFINITION)) {
       const oldValue = clonedObj.get(OUTPUTFILEDEFINITION);
       clonedObj.remove(OUTPUTFILEDEFINITION);
 
-      clonedObj.set(OUTPUTFILEDEFINITION, readFileContent(oldValue, true));
+      const internalFilePath = "outputFileDefinition.js";
+      zipBag.push({
+        internalPath: internalFilePath,
+        externalPath: oldValue,
+      });
+      clonedObj.set(OUTPUTFILEDEFINITION, internalFilePath);
     }
 
     if (clonedObj.has(TEMPLATE)) {
-      const { contentZipbase64, templatePathWithinZip } = clonedObj.createBase64ZippedTemplate();
-      clonedObj.set(RESOURCES, contentZipbase64);
+      // const templateVal = clonedObj.get(TEMPLATE);
+      clonedObj.remove(TEMPLATE);
+
+      const { zipPaths, templatePathWithinZip } = this.createTemplateZipPaths();
+      zipBag.push(...zipPaths);
       clonedObj.set(TEMPLATE, templatePathWithinZip);
+    }
+
+    if (clonedObj.has(ASYNCCAPTURE)) {
+      const oldValue = clonedObj.get(ASYNCCAPTURE);
+      clonedObj.remove(ASYNCCAPTURE);
+
+      if (oldValue) {
+        clonedObj.set(ASYNCCAPTURE, "true");
+      }
+    }
+
+    if (zipBag.length > 0) {
+      const zipFile = ExportConfig.generateZip(zipBag, this.get(MINIFY));
+      clonedObj.set(PAYLOAD, zipFile);
     }
 
     return clonedObj;
   }
 
   getFormattedConfigs() {
-    const processedObj = this.cloneWithProcessedProperties();
-    return processedObj.toJSON();
+    let clonedObj = {};
+
+    try {
+      clonedObj = this.cloneWithProcessedProperties();
+    } catch (e) {
+      if (e.code === "ENOENT" && !!e.path) {
+        const fileNotFoundError = new Error(
+          `The file '${e.path}' which you have provided does not exist. Please provide a valid file.`
+        );
+        fileNotFoundError.name = "File Not Found";
+        fileNotFoundError.path = e.path;
+
+        throw fileNotFoundError;
+      }
+
+      throw e;
+    }
+
+    const { typings } = clonedObj;
+
+    const keys = Array.from(clonedObj.configs.keys());
+    const processedObj = keys.reduce((obj, key) => {
+      const val = clonedObj.configs.get(key);
+
+      if (key === "resourceFilePath") return obj;
+
+      if (key === "payload") {
+        // eslint-disable-next-line no-param-reassign
+        obj[key] = val;
+      }
+
+      if (Object.hasOwnProperty.call(typings, key)) {
+        // eslint-disable-next-line no-param-reassign
+        obj[key] = val;
+      }
+
+      return obj;
+    }, {});
+
+    if (!!processedObj.templateFormat && processedObj.type !== "pdf") {
+      console.warn("templateFormat is not supported for types other than PDF. It will be ignored.");
+    }
+
+    processedObj[CLIENTNAME] = this.clientName;
+    processedObj[PLATFORM] = os.platform();
+
+    return processedObj;
   }
 
-  createBase64ZippedTemplate() {
+  createTemplateZipPaths() {
     const listExtractedPaths = this.findResources();
     let { baseDirectoryPath, listResourcePaths } = this.resolveResourceGlobFiles();
     const templateFilePath = this.get(TEMPLATE);
+    const isMinified = this.get(MINIFY)==="true";
+    const minifiedHash = `.min-fusionexport-${Date.now()}`;
+    const minifiedExtension = isMinified ?minifiedHash :"";
 
     // If basepath is not provided, find it
     // from common ancestor directory of extracted file paths plus template
@@ -261,15 +452,32 @@ class ExportConfig {
     }
 
     // Filter listResourcePaths to those only which are within basePath
-    listResourcePaths = listResourcePaths
-      .filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
+    listResourcePaths = listResourcePaths.filter(tmpPath => isWithinPath(tmpPath, baseDirectoryPath));
 
-    const zipFile = ExportConfig.generateZip([
-      ...listExtractedPaths, ...listResourcePaths, templateFilePath], baseDirectoryPath);
+    const zipPaths = ExportConfig.generatePathForZip(
+      [...listExtractedPaths, ...listResourcePaths, templateFilePath],
+      baseDirectoryPath
+    );
 
+    const prefixedZipPaths = zipPaths.map(zipPath => {
+      const internalDir = path.dirname(zipPath.internalPath);
+      const fileExtension = path.extname(zipPath.internalPath);
+      const fileName = path.basename(zipPath.internalPath, fileExtension);
+      return { 
+        internalPath: path.join("template", `${internalDir}/${fileName}${minifiedExtension}${fileExtension}`),
+        externalPath: zipPath.externalPath,
+       }
+    });
+
+    const rawTemplatePath = path.dirname(templateFilePath);
+    const templateExtension = path.extname(templateFilePath);
+    const templateFileName = path.basename(templateFilePath, templateExtension);
+
+    const templatePathWithinZip = path.join("template", getRelativePathFrom(`${rawTemplatePath}/${templateFileName}${minifiedExtension}${templateExtension}`, baseDirectoryPath));
+    
     return {
-      contentZipbase64: readFileContent(path.resolve(zipFile.name), true),
-      templatePathWithinZip: getRelativePathFrom(templateFilePath, baseDirectoryPath),
+      zipPaths: prefixedZipPaths,
+      templatePathWithinZip,
     };
   }
 
@@ -281,7 +489,9 @@ class ExportConfig {
       const html = fs.readFileSync(path.resolve(templateFilePath));
       
       const { JSDOM } = jsdom;
-      const { window: { document } } = new JSDOM(html);
+      const {
+        window: { document },
+      } = new JSDOM(html);
 
       const links = [...document.querySelectorAll('link')].map(l => l.href);
       const styles = [...document.styleSheets];
@@ -354,44 +564,39 @@ class ExportConfig {
     let baseDirectoryPath;
     let listResourcePaths = [];
 
-    if (!this.has('resourceFilePath')) {
+    if (!this.has("resourceFilePath")) {
       return {
         baseDirectoryPath,
         listResourcePaths,
       };
     }
 
-    const resourceFilePath = _.clone(this.get('resourceFilePath'));
+    const resourceFilePath = _.clone(this.get("resourceFilePath"));
     let resourceDirectoryPath = path.dirname(resourceFilePath);
 
-    // Load resourceFilePath content (JSON) as instance of Resources
     const resources = JSON.parse(fs.readFileSync(resourceFilePath));
     resources.include = resources.include || [];
     resources.exclude = resources.exclude || [];
-    // New attribute `resolvePath` - overloads actual direcotry location for glob resolve
+
     if (resources.resolvePath !== undefined) {
       resourceDirectoryPath = resources.resolvePath;
     }
 
-    {
-      const listResourceIncludePaths = [];
-      const listResourceExcludePaths = [];
+    const listResourceIncludePaths = [];
+    const listResourceExcludePaths = [];
 
-      /* eslint-disable no-restricted-syntax */
-      for (const eachIncludePath of resources.include) {
-        const matchedFiles = glob.sync(eachIncludePath, { cwd: resourceDirectoryPath });
-        listResourceIncludePaths.push.apply(matchedFiles);
-      }
+    resources.include.forEach(includePath => {
+      const matchedFiles = glob.sync(includePath, { cwd: resourceDirectoryPath });
+      listResourceIncludePaths.push(matchedFiles);
+    });
 
-      for (const eachExcludePath of resources.exclude) {
-        const matchedFiles = glob.sync(eachExcludePath, { cwd: resourceDirectoryPath });
-        listResourceExcludePaths.push.apply(matchedFiles);
-      }
-      /* eslint-enable no-restricted-syntax */
+    resources.exclude.forEach(excludePath => {
+      const matchedFiles = glob.sync(excludePath, { cwd: resourceDirectoryPath });
+      listResourceExcludePaths.push(matchedFiles);
+    });
 
-      listResourcePaths = diffArrays(listResourceIncludePaths, listResourceExcludePaths);
-      baseDirectoryPath = resources.basePath;
-    }
+    listResourcePaths = diffArrays(listResourceIncludePaths, listResourceExcludePaths);
+    baseDirectoryPath = resources.basePath;
 
     return {
       baseDirectoryPath,
@@ -399,24 +604,41 @@ class ExportConfig {
     };
   }
 
-  static generateZip(listAllFilePaths, baseDirectoryPath) {
-    const zip = new JSZip();
-
-    /* eslint-disable no-restricted-syntax */
-    for (const filePath of listAllFilePaths) {
-      const fileContentBuffer = fs.readFileSync(filePath);
+  static generatePathForZip(listAllFilePaths, baseDirectoryPath) {
+    return listAllFilePaths.map(filePath => {
       const filePathWithinZip = getRelativePathFrom(filePath, baseDirectoryPath);
-      zip.file(filePathWithinZip, fileContentBuffer);
-    }
-    /* eslint-enable no-restricted-syntax */
+      return {
+        internalPath: filePathWithinZip,
+        externalPath: filePath,
+      };
+    });
+  }
 
-    const content = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+  static filterNEFiles(fileBag) {
+    return fileBag.filter(file => {
+      if (fs.existsSync(file.externalPath)) return true;
+      console.warn(`File not found: ${originalPath}. Ignoring file.`);
+      return false;
+    });
+  }
 
-    const zipFile = tmp.fileSync({ postfix: '.zip' });
+  static generateZip(fileBag, minify) {
+    const zip = new AdmZip();
+    const isMinified = minify==="true";
 
-    fs.writeFileSync(zipFile.name, content, 'binary');
+    const _fileBag = ExportConfig.filterNEFiles(fileBag);
 
-    return zipFile;
+    _fileBag.forEach(file => {
+      const processedFile = isMinified ?minifyFiles(file) :file;
+      zip.addLocalFile(processedFile.externalPath, path.dirname(file.internalPath), path.basename(file.internalPath));
+      if (isMinified) fs.unlinkSync(processedFile.externalPath);
+    });
+
+    const zipFile = tmp.fileSync({ postfix: ".zip" });
+
+    zip.writeZip(zipFile.name);
+
+    return zipFile.name;
   }
 }
 

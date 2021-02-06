@@ -1,12 +1,12 @@
 # FusionExport Node Client
 
-NodeJS SDK for FusionExport. Enables exporting from FusionExport through NodeJS.
+Node.js SDK for FusionExport. Enables exporting from Node.js using FusionExport.
 
 ## Installation
-To install the NodeJS module, simply use npm:
+To install this module, simply use npm:
 
 ```bash
-$ npm install fusionexport-node-client --save
+npm install --save fusionexport-node-client
 ```
 
 ## Usage
@@ -14,49 +14,56 @@ $ npm install fusionexport-node-client --save
 To require the SDK into your project:
 
 ```js
-const FusionExport = require('fusionexport-node-client');
+const { ExportManager, ExportConfig } = require('fusionexport-node-client');
 ```
 
 ## Getting Started
 
-Let’s start with a simple chart export. For exporting a single chart, save the chartConfig in a JSON file. The config should be inside an array.
+Start with a simple chart export. For exporting a single chart just pass the chart configuration as you would have passed it to the FusionCharts constructor.
 
 ```js
-// Exporting a chart
-
-const path = require('path');
-
-// Require FusionExport
-const { ExportManager, ExportConfig } = require('../');
+// Require FusionExport components
+const { ExportManager, ExportConfig } = require('fusionexport-node-client');
 
 // Instantiate ExportManager
 const exportManager = new ExportManager();
 
-// Instantiate ExportConfig and add the required configurations
+// Instantiate ExportConfig
 const exportConfig = new ExportConfig();
 
-exportConfig.set('chartConfig', path.join(__dirname, 'resources', 'single.json'));
+const chartConfig = {
+  type: 'column2d',
+  dataFormat: 'json',
+  dataSource: {
+    chart: {
+      caption: 'Number of visitors last week',
+      theme: 'ocean',
+      subCaption: 'Bakersfield Central vs Los Angeles Topanga',
+    },
+    data: [
+      {
+        label: 'Mon',
+        value: '15123',
+      },
+      {
+        label: 'Tue',
+        value: '14233',
+      },
+      {
+        label: 'Wed',
+        value: '25507',
+      },
+    ],
+  },
+};
 
-// provide the export config
-exportManager.export(exportConfig);
+exportConfig.set('chartConfig', chartConfig);
 
-// Called when export is done
-exportManager.on('exportDone', (outputFileBag) => {
-  outputFileBag.forEach((op) => {
-    console.log(`DONE: ${op.realName}`);
-  });
-
-  ExportManager.saveExportedFiles(outputFileBag);
-});
-
-// Called on each export state change
-exportManager.on('exportStateChange', (state) => {
-  console.log(`[${state.reporter}] ${state.customMsg}`);
-});
-
-// Called on erroe
-exportManager.on('error', (err) => {
-  console.error(err);
+// Export the chart by providing the exportConfig to the exportManager
+exportManager.export(exportConfig, '.', true).then((exportedFiles) => {
+  exportedFiles.forEach(file => console.log(file));
+}).catch((err) => {
+  console.log(err);
 });
 ```
 

@@ -97,4 +97,7 @@ exportedimages
 dump.txt
 timetaken.txt
 build
-export--*
+fusioncharts-export.zip
+test_*.*
+export*
+!export*.js

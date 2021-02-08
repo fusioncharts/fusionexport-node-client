@@ -14,11 +14,20 @@ class ExportManager extends EventEmitter {
     super();
     this.config = options ? Object.assign({}, config, options) : config;
     this.url = `${this.config.host}:${this.config.port}`;
-    this.client = null;
-    this.clientName = undefined;
-    this.config.url = `http://${this.config.host}:${this.config.port}/api/v2.0/export`;
+    this.api = `/api/v2.0/export`;
   }
-
+  async getUrl() {
+    if(this.config.isSecure) {
+      try {
+        const url = `https://${this.url}`;
+        await fetch(url);
+        return `${url}${this.api}`;
+      } catch(e) {
+        console.warn('Warning: HTTPS server not found, overriding requests to an HTTP server.');
+      }
+    }
+    return `http://${this.url}${this.api}`
+  }
   export(exportConfig, dirPath = ".", unzip = false) {
     return new Promise(async (resolve, reject) => {
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
@@ -26,65 +35,14 @@ class ExportManager extends EventEmitter {
         formData.payload = fs.createReadStream(formData.payload);
       }
 	  try {
-        const content = await ExportManager.sendToServer(this.config.url, formData);
+        const url = await this.getUrl();
+        const content = await ExportManager.sendToServer(url, formData);
         const zipFile = ExportManager.saveZip(content);
         const files = ExportManager.saveExportedFiles(zipFile, dirPath, unzip);
         resolve(files);
       } catch (error) {
         reject(error);
       }
-    });
-  }
-  setWSSClient(cb, secured) {
-    this.client = new WebSocket(`ws${secured ? 's' : ''}://${this.url}`, { rejectUnauthorized: false });
-    cb();
-  }
-  setClient(cb) {
-    if(this.config.isSecure) {
-      const client = new WebSocket(`wss://${this.url}`, { rejectUnauthorized: false });
-      let timeOut, secured = false;
-      client.on('error', () => {
-        console.warn('Warning: HTTPS server not found, overriding requests to an HTTP server.');
-        client.close();
-      })
-      const onOpen = () => {
-        clearTimeout(timeOut);
-        secured = true;
-        client.close();
-      }
-      timeOut = setTimeout(() => {
-        client.removeEventListener('open');
-        client.close();
-      }, 2000);
-      client.on('open', onOpen)
-      client.on('close', () => {
-        this.setWSSClient(cb, secured);
-      })
-    } else {
-      this.setWSSClient(cb);
-    }
-  }
-  connect() {
-    return new Promise((resolve, reject) => {
-      let rejectionId;
-      this.setClient(() => {
-        this.registerOnErrorListener();
-        this.registerOnEndListener();
-        this.registerOnDataRecievedListener();
-
-        const onOpenListener = () => {
-          logger.info('Connected with FusionExport Service');
-          clearTimeout(rejectionId);
-          resolve();
-        };
-
-        rejectionId = setTimeout(() => {
-          const errorMsg = 'Unable to connect to FusionExport Service!\nPlease make sure the FusionExport Service is running before executing the command';
-          reject(new Error(errorMsg));
-          this.client.removeEventListener('open', onOpenListener);
-        }, 2000);
-        this.client.on('open', onOpenListener);
-      });
     });
   }
 
@@ -94,9 +52,9 @@ class ExportManager extends EventEmitter {
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
-
       try {
-        const content = await ExportManager.sendToServer(this.config.url, formData);
+        const url = await this.getUrl();
+        const content = await ExportManager.sendToServer(url, formData);
         const streams = ExportManager.unzipAsStream(content);
         resolve(streams);
       } catch (error) {

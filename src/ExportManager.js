@@ -16,13 +16,29 @@ class ExportManager extends EventEmitter {
     this.config.url = `http://${this.config.host}:${this.config.port}/api/v2.0/export`;
   }
 
-  export(exportConfig, dirPath = ".", unzip = false) {
+  exportBulkParameterHandler(exportBulk){
+    if(exportBulk =="true" || exportBulk =="True"){
+      return 'true'
+    }
+    else if(exportBulk =="false" || exportBulk =="False"){
+      return 'false'
+    }
+    else if(exportBulk==1 || exportBulk=='1'){
+      return 'true'
+    }
+    else if(exportBulk==0 || exportBulk=='0'){
+      return 'false'
+    }
+  }
+
+  export(exportConfig, dirPath = ".", unzip = true,exportBulk='false') {
     return new Promise(async (resolve, reject) => {
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
 
+      formData.exportBulk = this.exportBulkParameterHandler(exportBulk)
       try {
         const content = await ExportManager.sendToServer(this.config.url, formData);
         const zipFile = ExportManager.saveZip(content);
@@ -115,7 +131,7 @@ class ExportManager extends EventEmitter {
     return zipFile.name;
   }
 
-  static saveExportedFiles(exportedFile, dirPath = ".", unzip = false) {
+  static saveExportedFiles(exportedFile, dirPath = ".", unzip = true) {
     if (!exportedFile) {
       throw new Error("Exported files are missing");
     }

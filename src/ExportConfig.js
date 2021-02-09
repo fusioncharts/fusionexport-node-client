@@ -138,6 +138,7 @@ const PLATFORM = "platform";
 const TEMPLATE = "templateFilePath";
 const ASYNCCAPTURE = "asyncCapture";
 const PAYLOAD = "payload";
+const EXPORTBULK = "exportBulk"
 
 class ExportConfig {
   constructor() {

@@ -1,0 +1,33 @@
+/* @import url("https://fonts.googleapis.com/css2?family=Open+Sans+Condensed:wght@300&display=swap"); */
+/* @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,300&family=Hachi+Maru+Pop&display=swap'); */
+/* @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap'); */
+/* @font-face {
+  font-family: "open_sans_condensed";
+  font-style: normal;
+  font-weight: normal;
+  src: url("./fonts/opensanscondensed-lightitalic-webfont.woff") format("woff"),
+    url("./fonts/opensanscondensed-lightitalic-webfont") format("woff2"),
+    url("./fonts/OpenSansCondensed-LightItalic.ttf") format("truetype");
+} */
+@font-face {
+  font-family: "Pacifico";
+  font-style: normal;
+  font-weight: normal;
+  src: url("./fonts/pacificio/pacifico-webfont.woff") format("woff"),
+    url("./fonts/pacificio/pacifico-webfont") format("woff2"),
+    url("./fonts/pacificio/Pacifico.ttf") format("truetype");
+}
+
+.column_chart {
+  border: 1px solid black;
+  width: 98%;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+h1 {
+  /* font-family: 'Chakra Petch', sans-serif !important; */
+  /* font-family: "open_sans_condensed", sans-serif !important; */
+  font-family: 'Great Vibes', cursive !important;
+  font-family: 'Pacifico', cursive !important;
+}

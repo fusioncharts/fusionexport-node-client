@@ -473,6 +473,59 @@ class ExportConfig {
       } = new JSDOM(html);
 
       const links = [...document.querySelectorAll("link")].map(l => l.href);
+
+      const styles = [...document.styleSheets];
+      
+      let fontFileURLs=[];
+      for(var i=0; i<styles.length; i++) {
+        var sheet = styles[i];
+          const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            let m;
+            let extractedFontURLs = []
+            while ((m = regex.exec(sheet)) !== null) {
+                // This is necessary to avoid infinite loops with zero-width matches
+                if (m.index === regex.lastIndex) {
+                    regex.lastIndex++;
+                }
+                let string = m[1].replace(/^"(.*)"$/, '$1')
+                if(!path.extname(string)){
+                  string = string + "." + m[3]
+                }
+                extractedFontURLs.push(string)
+            }
+          fontFileURLs.push(extractedFontURLs.filter(isLocalResource).map(url =>
+              path.resolve(templateDirectory,url)))
+      }
+      
+      links.forEach(link => {
+        if(path.extname(link) == ".css"){
+          const resolvedLink = path.resolve(link);
+         
+          if(resolvedLink !== undefined && fs.existsSync(resolvedLink)){
+            const linkDirectory = path.dirname(resolvedLink);
+            const css = fs.readFileSync(path.resolve(linkDirectory,resolvedLink),"utf8");
+            const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            let m;
+            let extractedFontURLs = []
+            while ((m = regex.exec(css)) !== null) {
+                // This is necessary to avoid infinite loops with zero-width matches
+                if (m.index === regex.lastIndex) {
+                    regex.lastIndex++;
+                }
+                let string = m[1].replace(/^"(.*)"$/, '$1')
+                if(!path.extname(string)){
+                  string = string + "." + m[3]
+                }
+                extractedFontURLs.push(string)
+            }
+            fontFileURLs.push(extractedFontURLs.filter(isLocalResource).map(url =>
+              path.resolve(linkDirectory,url)))
+          }
+        }
+      })
+      
+      var mergedFontFileURLs = [].concat.apply([], fontFileURLs);
+
       const scripts = [...document.querySelectorAll("script")].map(s => s.src);
       const imgs = [...document.querySelectorAll("img")].map(i => i.src);
 
@@ -480,7 +533,7 @@ class ExportConfig {
       const scriptURLs = scripts.filter(isLocalResource).map(script => path.resolve(templateDirectory, script));
       const imgURLs = imgs.filter(isLocalResource).map(img => path.resolve(templateDirectory, img));
 
-      return [...linkURLs, ...scriptURLs, ...imgURLs];
+      return [...linkURLs, ...scriptURLs, ...imgURLs, ...mergedFontFileURLs];
     }
     return [];
   }

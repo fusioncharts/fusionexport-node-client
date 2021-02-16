@@ -18,7 +18,7 @@ class ExportManager extends EventEmitter {
 
   export(exportConfig, dirPath = ".", unzip = false) {
     return new Promise(async (resolve, reject) => {
-      const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
+      const formData = _.cloneDeep(exportConfig.getFormattedConfigs({minifyResources: this.config.minifyResources || false}));
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }

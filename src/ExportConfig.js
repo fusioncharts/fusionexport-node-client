@@ -499,7 +499,7 @@ class ExportConfig {
       let fontFileURLs=[];
       for(var i=0; i<styles.length; i++) {
         var sheet = styles[i];
-          const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            const regex = /url\((.*?)\).*?format\((\'|\")(.*?)(\'|\")\)/g;
             let m;
             let extractedFontURLs = []
             while ((m = regex.exec(sheet)) !== null) {
@@ -524,7 +524,7 @@ class ExportConfig {
           if(resolvedLink !== undefined && fs.existsSync(resolvedLink)){
             const linkDirectory = path.dirname(resolvedLink);
             const css = fs.readFileSync(path.resolve(linkDirectory,resolvedLink),"utf8");
-            const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            const regex = /url\((.*?)\).*?format\((\'|\")(.*?)(\'|\")\)/g;
             let m;
             let extractedFontURLs = []
             while ((m = regex.exec(css)) !== null) {
@@ -532,7 +532,7 @@ class ExportConfig {
                 if (m.index === regex.lastIndex) {
                     regex.lastIndex++;
                 }
-                let string = m[1].replace(/^"(.*)"$/, '$1')
+                let string = m[1].replace(/["']/g, "");
                 if(!path.extname(string)){
                   string = string + "." + m[3]
                 }

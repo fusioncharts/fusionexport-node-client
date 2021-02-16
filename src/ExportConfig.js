@@ -382,7 +382,7 @@ class ExportConfig {
   }
 
   getFormattedConfigs(options) {
-    if (options.minifyResources) this.set(MINIFY, options.minifyResources);
+    if (options && options.minifyResources) this.set(MINIFY, options.minifyResources);
     let clonedObj = {};
 
     try {

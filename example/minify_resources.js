@@ -24,14 +24,12 @@ exportConfig.set('templateFilePath', path.join(__dirname, 'resources', 'dashboar
 exportConfig.set('type', 'pdf');
 exportConfig.set('quality', 'best');
 
-//Minify resources
-exportConfig.set('minifyResources', true);
-
 
 // ** EXPORT-MANAGER ***
 
 // Instantiate ExportManager
-const exportManager = new ExportManager();
+// Add minify resources option
+const exportManager = new ExportManager({minifyResources: true});
 
 
 // * OUTPUT **

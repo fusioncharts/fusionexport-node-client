@@ -6,6 +6,7 @@ const jsdom = require("jsdom");
 const tmp = require("tmp");
 const AdmZip = require("adm-zip");
 const glob = require("glob");
+const minifyFiles = require('sync-rpc')(__dirname+'/minifyfile.js');
 
 const {
   getCommonAncestorDirectory,
@@ -17,8 +18,16 @@ const {
   humanizeArray,
 } = require("./utils");
 
-const metadataFolderPath = path.join(__dirname, "../metadata");
-const typingsFilePath = path.join(metadataFolderPath, "fusionexport-typings.json");
+const metadataFolderPath = path.join(__dirname, '../metadata');
+const metadataFilePath = path.join(metadataFolderPath, 'fusionexport-meta.json');
+const typingsFilePath = path.join(metadataFolderPath, 'fusionexport-typings.json');
+
+const mapMetadataTypeNameToJSValue = {
+  string: '',
+  boolean: true,
+  integer: 1,
+  object:[]
+};
 
 function booleanConverter(value) {
   if (typeof value === "string") {
@@ -138,6 +147,7 @@ const PLATFORM = "platform";
 const TEMPLATE = "templateFilePath";
 const ASYNCCAPTURE = "asyncCapture";
 const PAYLOAD = "payload";
+const MINIFY = "minifyResources";
 
 class ExportConfig {
   constructor() {
@@ -215,11 +225,9 @@ class ExportConfig {
 
   checkTypings(configName) {
     const reqdTyping = this.typings[configName];
-
-    if (!reqdTyping) {
-      const invalidConfigError = new Error(`${configName} is not allowed`);
-      invalidConfigError.name = "Invalid Configuration";
-      throw invalidConfigError;
+    const valueOfType = mapMetadataTypeNameToJSValue[reqdTyping.type];
+    if (typeof configValue !== typeof valueOfType) {
+      throw new Error(`${configName} of type ${typeof configValue} is not allowed`);
     }
   }
 
@@ -366,7 +374,7 @@ class ExportConfig {
     }
 
     if (zipBag.length > 0) {
-      const zipFile = ExportConfig.generateZip(zipBag);
+      const zipFile = ExportConfig.generateZip(zipBag, this.get(MINIFY));
       clonedObj.set(PAYLOAD, zipFile);
     }
 
@@ -427,6 +435,9 @@ class ExportConfig {
     const listExtractedPaths = this.findResources();
     let { baseDirectoryPath, listResourcePaths } = this.resolveResourceGlobFiles();
     const templateFilePath = this.get(TEMPLATE);
+    const isMinified = this.get(MINIFY)==="true";
+    const minifiedHash = `.min-fusionexport-${Date.now()}`;
+    const minifiedExtension = isMinified ?minifiedHash :"";
 
     // If basepath is not provided, find it
     // from common ancestor directory of extracted file paths plus template
@@ -448,13 +459,22 @@ class ExportConfig {
       baseDirectoryPath
     );
 
-    const prefixedZipPaths = zipPaths.map(zipPath => ({
-      internalPath: path.join("template", zipPath.internalPath),
-      externalPath: zipPath.externalPath,
-    }));
+    const prefixedZipPaths = zipPaths.map(zipPath => {
+      const internalDir = path.dirname(zipPath.internalPath);
+      const fileExtension = path.extname(zipPath.internalPath);
+      const fileName = path.basename(zipPath.internalPath, fileExtension);
+      return { 
+        internalPath: path.join("template", `${internalDir}/${fileName}${minifiedExtension}${fileExtension}`),
+        externalPath: zipPath.externalPath,
+       }
+    });
 
-    const templatePathWithinZip = path.join("template", getRelativePathFrom(templateFilePath, baseDirectoryPath));
+    const rawTemplatePath = path.dirname(templateFilePath);
+    const templateExtension = path.extname(templateFilePath);
+    const templateFileName = path.basename(templateFilePath, templateExtension);
 
+    const templatePathWithinZip = path.join("template", getRelativePathFrom(`${rawTemplatePath}/${templateFileName}${minifiedExtension}${templateExtension}`, baseDirectoryPath));
+    
     return {
       zipPaths: prefixedZipPaths,
       templatePathWithinZip,
@@ -467,19 +487,19 @@ class ExportConfig {
     if (templateFilePath !== undefined) {
       const templateDirectory = path.dirname(templateFilePath);
       const html = fs.readFileSync(path.resolve(templateFilePath));
+      
       const { JSDOM } = jsdom;
       const {
         window: { document },
       } = new JSDOM(html);
 
-      const links = [...document.querySelectorAll("link")].map(l => l.href);
-
+      const links = [...document.querySelectorAll('link')].map(l => l.href);
       const styles = [...document.styleSheets];
       
       let fontFileURLs=[];
       for(var i=0; i<styles.length; i++) {
         var sheet = styles[i];
-          const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            const regex = /url\((.*?)\).*?format\((\'|\")(.*?)(\'|\")\)/g;
             let m;
             let extractedFontURLs = []
             while ((m = regex.exec(sheet)) !== null) {
@@ -504,7 +524,7 @@ class ExportConfig {
           if(resolvedLink !== undefined && fs.existsSync(resolvedLink)){
             const linkDirectory = path.dirname(resolvedLink);
             const css = fs.readFileSync(path.resolve(linkDirectory,resolvedLink),"utf8");
-            const regex = /url\((.*?)\) format\((\'|\")(.*?)(\'|\")\)/g;
+            const regex = /url\((.*?)\).*?format\((\'|\")(.*?)(\'|\")\)/g;
             let m;
             let extractedFontURLs = []
             while ((m = regex.exec(css)) !== null) {
@@ -512,7 +532,7 @@ class ExportConfig {
                 if (m.index === regex.lastIndex) {
                     regex.lastIndex++;
                 }
-                let string = m[1].replace(/^"(.*)"$/, '$1')
+                let string = m[1].replace(/["']/g, "");
                 if(!path.extname(string)){
                   string = string + "." + m[3]
                 }
@@ -526,13 +546,15 @@ class ExportConfig {
       
       var mergedFontFileURLs = [].concat.apply([], fontFileURLs);
 
-      const scripts = [...document.querySelectorAll("script")].map(s => s.src);
-      const imgs = [...document.querySelectorAll("img")].map(i => i.src);
+      const scripts = [...document.querySelectorAll('script')].map(s => s.src);
+      const imgs = [...document.querySelectorAll('img')].map(i => i.src);
 
-      const linkURLs = links.filter(isLocalResource).map(link => path.resolve(templateDirectory, link));
-      const scriptURLs = scripts.filter(isLocalResource).map(script => path.resolve(templateDirectory, script));
-      const imgURLs = imgs.filter(isLocalResource).map(img => path.resolve(templateDirectory, img));
-
+      const linkURLs = links.filter(isLocalResource).map(link =>
+        path.resolve(templateDirectory, link));
+      const scriptURLs = scripts.filter(isLocalResource).map(script =>
+        path.resolve(templateDirectory, script));
+      const imgURLs = imgs.filter(isLocalResource).map(img =>
+        path.resolve(templateDirectory, img));
       return [...linkURLs, ...scriptURLs, ...imgURLs, ...mergedFontFileURLs];
     }
     return [];
@@ -595,20 +617,21 @@ class ExportConfig {
   static filterNEFiles(fileBag) {
     return fileBag.filter(file => {
       if (fs.existsSync(file.externalPath)) return true;
-      console.warn(`File not found: ${file.externalPath}. Ignoring file.`);
+      console.warn(`File not found: ${originalPath}. Ignoring file.`);
       return false;
     });
   }
 
-  static generateZip(fileBag) {
+  static generateZip(fileBag, minify) {
     const zip = new AdmZip();
+    const isMinified = minify==="true";
 
     const _fileBag = ExportConfig.filterNEFiles(fileBag);
 
     _fileBag.forEach(file => {
-      const internalDir = path.dirname(file.internalPath);
-      const internalName = path.basename(file.internalPath);
-      zip.addLocalFile(file.externalPath, internalDir, internalName);
+      const processedFile = isMinified ?minifyFiles(file) :file;
+      zip.addLocalFile(processedFile.externalPath, path.dirname(file.internalPath), path.basename(file.internalPath));
+      if (isMinified) fs.unlinkSync(processedFile.externalPath);
     });
 
     const zipFile = tmp.fileSync({ postfix: ".zip" });

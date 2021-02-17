@@ -618,7 +618,7 @@ class ExportConfig {
   static filterNEFiles(fileBag) {
     return fileBag.filter(file => {
       if (fs.existsSync(file.externalPath)) return true;
-      console.warn(`File not found: ${originalPath}. Ignoring file.`);
+      console.warn(`File not found: ${file.externalPath}. Ignoring file.`);
       return false;
     });
   }
@@ -630,7 +630,8 @@ class ExportConfig {
     const _fileBag = ExportConfig.filterNEFiles(fileBag);
 
     _fileBag.forEach(file => {
-      const processedFile = isMinified ?minifyFiles(file) :file;
+      const type = path.extname(file.internalPath);
+      const processedFile = isMinified ?minifyFiles({file, type, zipbag: _fileBag}) :file;
       zip.addLocalFile(processedFile.externalPath, path.dirname(file.internalPath), path.basename(file.internalPath));
       if (isMinified) fs.unlinkSync(processedFile.externalPath);
     });

@@ -7,7 +7,7 @@ const glob = require('glob');
 var fontDirFiles=[];
 
 // Import FusionExport SDK client for Node.js
-const { ExportManager, ExportConfig } = require('../../');
+const { ExportManager, ExportConfig } = require('..');
 
 // ** EXPORT CONFIG ***
 
@@ -18,13 +18,13 @@ const exportConfig = new ExportConfig();
 // You can also pass the same object as serialized JSON.
 exportConfig.set(
   "chartConfig",
-  path.join(__dirname, ".", "chart-config-file.json")
+  path.join(__dirname, "resources", "chart-config-file.json")
 );
 
 // ATTENTION - Pass the path of the dashboard template
 exportConfig.set(
   "templateFilePath",
-  path.join(__dirname, ".", "dashboard-template.html")
+  path.join(__dirname, "resources", "dashboard-template.html")
 );
 
 // ** EXPORT-MANAGER ***

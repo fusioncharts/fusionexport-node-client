@@ -9,7 +9,7 @@ const exportConfig = new ExportConfig();
 
 
 
-exportConfig.set("chartConfig", path.join(__dirname, "resources", "chart-config-file-for-big.json"));
+exportConfig.set("chartConfig", path.join(__dirname, "resources", "multiple.json"));
 exportConfig.set('type',"xlsx");
 
 // Export the chart by providing the exportConfig to the exportManager

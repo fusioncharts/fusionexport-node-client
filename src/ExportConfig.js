@@ -623,6 +623,10 @@ class ExportConfig {
     });
   }
 
+  static isHtmlJsCss(file){
+	  return ['.html','.css','.js'].includes(path.extname(file.internalPath).toLowerCase());
+  }
+
   static generateZip(fileBag, minify) {
     const zip = new AdmZip();
     const isMinified = minify==="true";
@@ -631,9 +635,9 @@ class ExportConfig {
 
     _fileBag.forEach(file => {
       const type = path.extname(file.internalPath);
-      const processedFile = isMinified ?minifyFiles({file, type, zipbag: _fileBag}) :file;
+      const processedFile = isMinified && ExportConfig.isHtmlJsCss(file) ?minifyFiles({file, type, zipbag: _fileBag}) :file;
       zip.addLocalFile(processedFile.externalPath, path.dirname(file.internalPath), path.basename(file.internalPath));
-      if (isMinified) fs.unlinkSync(processedFile.externalPath);
+      if (isMinified && ExportConfig.isHtmlJsCss(file)) fs.unlinkSync(processedFile.externalPath);
     });
 
     const zipFile = tmp.fileSync({ postfix: ".zip" });

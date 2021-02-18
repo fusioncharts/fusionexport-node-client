@@ -3,7 +3,7 @@
 const path = require("path");
 
 // Require FusionExport
-const { ExportManager, ExportConfig } = require("../");
+const { ExportManager, ExportConfig } = require("..");
 
 // Instantiate ExportManager
 const exportManager = new ExportManager({

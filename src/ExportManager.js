@@ -35,7 +35,23 @@ class ExportManager extends EventEmitter {
     }
     return `http://${this.url}${this.api}`
   }
-  export(exportConfig, dirPath = ".", unzip = false) {
+
+  exportBulkParameterHandler(exportBulk){
+    if(exportBulk =="true" || exportBulk =="True"){
+      return 'true'
+    }
+    else if(exportBulk =="false" || exportBulk =="False"){
+      return 'false'
+    }
+    else if(exportBulk==1 || exportBulk=='1'){
+      return 'true'
+    }
+    else if(exportBulk==0 || exportBulk=='0'){
+      return 'false'
+    }
+  }
+
+  export(exportConfig, dirPath = ".", unzip = true, exportBulk='false') {
     return new Promise(async (resolve, reject) => {
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs({minifyResources: this.config.minifyResources || false}));
       if (formData.payload) {
@@ -43,6 +59,7 @@ class ExportManager extends EventEmitter {
       }
 	  try {
         const url = await this.getUrl();
+        formData.exportBulk = this.exportBulkParameterHandler(exportBulk)
         const content = await ExportManager.sendToServer(url, formData, this.config.isSecure);
         const zipFile = ExportManager.saveZip(content);
         const files = ExportManager.saveExportedFiles(zipFile, dirPath, unzip);
@@ -135,7 +152,7 @@ class ExportManager extends EventEmitter {
     return zipFile.name;
   }
 
-  static saveExportedFiles(exportedFile, dirPath = ".", unzip = false) {
+  static saveExportedFiles(exportedFile, dirPath = ".", unzip = true) {
     if (!exportedFile) {
       throw new Error("Exported files are missing");
     }

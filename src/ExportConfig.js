@@ -148,6 +148,7 @@ const TEMPLATE = "templateFilePath";
 const ASYNCCAPTURE = "asyncCapture";
 const PAYLOAD = "payload";
 const MINIFY = "minifyResources";
+const EXPORTBULK = "exportBulk"
 
 class ExportConfig {
   constructor() {

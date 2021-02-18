@@ -12,6 +12,16 @@
   "templateFilePath": {
     "supportedTypes": ["string"]
   },
+  "exportBulk": {
+    "supportedTypes": ["string", "boolean"],
+    "converter": "BooleanToStringConverter"
+  },
+  "header": {
+    "supportedTypes": ["string"]
+  },
+  "subheader": {
+    "supportedTypes": ["string"]
+  },
   "templateWidth": {
     "supportedTypes": ["string", "number"],
     "converter": "NumberConverter"

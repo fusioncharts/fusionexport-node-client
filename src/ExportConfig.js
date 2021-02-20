@@ -466,7 +466,7 @@ class ExportConfig {
       const fileExtension = path.extname(zipPath.internalPath);
       const fileName = path.basename(zipPath.internalPath, fileExtension);
       return { 
-        internalPath: path.join("template", `${internalDir}/${fileName}${minifiedExtension}${fileExtension}`),
+        internalPath: ExportConfig.isHtmlJsCss(zipPath) ?path.join("template", `${internalDir}/${fileName}${minifiedExtension}${fileExtension}`) :path.join("template", zipPath.internalPath),
         externalPath: zipPath.externalPath,
        }
     });

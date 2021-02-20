@@ -423,7 +423,7 @@ class ExportConfig {
       return obj;
     }, {});
 
-    if (!!processedObj.templateFormat && processedObj.type !== "pdf") {
+    if (!!processedObj.templateFormat && (processedObj.type && processedObj.type !== "pdf")) {
       console.warn("templateFormat is not supported for types other than PDF. It will be ignored.");
     }
 

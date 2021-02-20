@@ -55,7 +55,7 @@ function generateMinfiedFiles () {
 function updateHtml (document, target, zipbag) {
   const property = target=="script" || target=="img" ?"src" :"href";
   document.querySelectorAll(target).forEach((item) => {
-    const file = zipbag.find(i => i.externalPath.match(item[property]));
+    const file = zipbag.find(i => i.externalPath.match(item[property]) && item[property].length>0);
     if (file) {
       item[property] = getRelativePathFrom(file.internalPath, "template");
     }

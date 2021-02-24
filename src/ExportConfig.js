@@ -521,9 +521,8 @@ class ExportConfig {
       
       links.forEach(link => {
         if(path.extname(link) == ".css"){
-          const resolvedLink = path.resolve(link);
-         
-          if(resolvedLink !== undefined && fs.existsSync(resolvedLink)){
+          const resolvedLink = path.resolve(templateDirectory, link);
+          if(resolvedLink && fs.existsSync(resolvedLink)){
             const linkDirectory = path.dirname(resolvedLink);
             const css = fs.readFileSync(path.resolve(linkDirectory,resolvedLink),"utf8");
             const regex = /url\((.*?)\).*?format\((\'|\")(.*?)(\'|\")\)/g;
@@ -636,7 +635,7 @@ class ExportConfig {
 
     _fileBag.forEach(file => {
       const type = path.extname(file.internalPath);
-      const processedFile = isMinified && ExportConfig.isHtmlJsCss(file) ?minifyFiles({file, type, zipbag: _fileBag}) :file;
+      const processedFile = isMinified && ExportConfig.isHtmlJsCss(file) ? minifyFiles({file, type, zipbag: _fileBag}) :file;
       zip.addLocalFile(processedFile.externalPath, path.dirname(file.internalPath), path.basename(file.internalPath));
       if (isMinified && ExportConfig.isHtmlJsCss(file)) fs.unlinkSync(processedFile.externalPath);
     });

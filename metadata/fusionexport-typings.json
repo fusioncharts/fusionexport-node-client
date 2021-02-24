@@ -13,8 +13,8 @@
     "supportedTypes": ["string"]
   },
   "exportBulk": {
-    "supportedTypes": ["string", "boolean"],
-    "converter": "BooleanToStringConverter"
+    "supportedTypes": ["string", "number", "boolean"],
+    "converter": "BooleanConverter"
   },
   "header": {
     "supportedTypes": ["string"]

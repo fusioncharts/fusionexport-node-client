@@ -36,30 +36,15 @@ class ExportManager extends EventEmitter {
     return `http://${this.url}${this.api}`
   }
 
-  exportBulkParameterHandler(exportBulk){
-    if(exportBulk =="true" || exportBulk =="True"){
-      return 'true'
-    }
-    else if(exportBulk =="false" || exportBulk =="False"){
-      return 'false'
-    }
-    else if(exportBulk==1 || exportBulk=='1'){
-      return 'true'
-    }
-    else if(exportBulk==0 || exportBulk=='0'){
-      return 'false'
-    }
-  }
-
-  export(exportConfig, dirPath = ".", unzip = true, exportBulk='false') {
+  export(exportConfig, dirPath = ".", unzip = true, exportBulk=true) {
     return new Promise(async (resolve, reject) => {
+	  exportConfig.set("exportBulk", exportBulk);
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs({minifyResources: this.config.minifyResources || false}));
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
 	  try {
         const url = await this.getUrl();
-        formData.exportBulk = this.exportBulkParameterHandler(exportBulk)
         const content = await ExportManager.sendToServer(url, formData, this.config.isSecure);
         const zipFile = ExportManager.saveZip(content);
         const files = ExportManager.saveExportedFiles(zipFile, dirPath, unzip);

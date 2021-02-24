@@ -17,7 +17,7 @@ exportConfig.set('header', "My Header");
 exportConfig.set('subheader', "My Subheader");
 
 // Export the chart by providing the exportConfig to the exportManager
-exportManager.export(exportConfig, '.', true, true).then((exportedFiles) => {
+exportManager.export(exportConfig, '.', true, false).then((exportedFiles) => {
   exportedFiles.forEach(file => console.log(file));
 }).catch((err) => {
   console.log(err);

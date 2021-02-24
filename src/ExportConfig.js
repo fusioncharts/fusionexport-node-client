@@ -374,6 +374,15 @@ class ExportConfig {
       }
     }
 
+	if (clonedObj.has(EXPORTBULK)) {
+		const oldValue = clonedObj.get(EXPORTBULK);
+		clonedObj.remove(EXPORTBULK);
+  
+		if (!oldValue) {
+		  clonedObj.set(EXPORTBULK, "");
+		}
+	}
+
     if (zipBag.length > 0) {
       const zipFile = ExportConfig.generateZip(zipBag, this.get(MINIFY));
       clonedObj.set(PAYLOAD, zipFile);

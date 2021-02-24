@@ -12,9 +12,8 @@ const exportManager = new ExportManager();
 const exportConfig = new ExportConfig();
 
 exportConfig.set("templateFilePath", path.join(__dirname, "resources", "template_d3.html"));
-// exportConfig.set("type", "jpg");
+exportConfig.set("type", "jpg");
 exportConfig.set("asyncCapture", true);
-exportConfig.set('templateFormat', 'A5');
 
 // provide the export config
 exportManager

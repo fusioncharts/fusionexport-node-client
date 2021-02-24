@@ -11,7 +11,7 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
-			"program": "${workspaceFolder}\\example\\export_local_font.js"
+			"program": "${workspaceFolder}\\example\\export_using_defaultTemplate.js"
 		}
 	]
 }

@@ -51,7 +51,7 @@ class ExportManager extends EventEmitter {
     }
   }
 
-  export(exportConfig, dirPath = ".", unzip = true, exportBulk='false') {
+  export(exportConfig, dirPath = ".", unzip = true, exportBulk='true') {
     return new Promise(async (resolve, reject) => {
       const formData = _.cloneDeep(exportConfig.getFormattedConfigs({minifyResources: this.config.minifyResources || false}));
       if (formData.payload) {

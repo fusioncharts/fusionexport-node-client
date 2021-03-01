@@ -12,7 +12,7 @@ const { ExportManager, ExportConfig } = require('..');
 // ** EXPORT CONFIG ***
 
 // Instantiate ExportConfig and add the required configurations
-const exportConfig = new ExportConfig({minifyResources: true});
+const exportConfig = new ExportConfig();
 
 // Provide path of the chart configuration which we have defined above.
 // You can also pass the same object as serialized JSON.
@@ -30,7 +30,7 @@ exportConfig.set(
 // ** EXPORT-MANAGER ***
 
 // Instantiate ExportManager
-const exportManager = new ExportManager();
+const exportManager = new ExportManager({minifyResources: true});
 
 // * OUTPUT **
 

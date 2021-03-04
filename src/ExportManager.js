@@ -8,23 +8,44 @@ const fetch = require("node-fetch");
 const FormData = require("form-data");
 const { EventEmitter } = require("events");
 const config = require("./config.js");
-
+const https = require('https');
+const agent = new https.Agent({
+  rejectUnauthorized: false
+})
 class ExportManager extends EventEmitter {
   constructor(options) {
     super();
     this.config = options ? Object.assign({}, config, options) : config;
-    this.config.url = `http://${this.config.host}:${this.config.port}/api/v2.0/export`;
+    this.url = `${this.config.host}:${this.config.port}`;
+    this.api = `/api/v2.0/export`;
+  }
+  async getUrl() {
+    if(this.config.isSecure) {
+      try {
+        const url = `https://${this.url}`;
+        await fetch(url, {
+          method: 'GET',
+          agent
+        });
+        return `${url}${this.api}`;
+      } catch(e) {
+        this.config.isSecure = false;
+        console.warn('Warning: HTTPS server not found, overriding requests to an HTTP server.');
+      }
+    }
+    return `http://${this.url}${this.api}`
   }
 
-  export(exportConfig, dirPath = ".", unzip = false) {
+  export(exportConfig, dirPath = ".", unzip = true, exportBulk=true) {
     return new Promise(async (resolve, reject) => {
-      const formData = _.cloneDeep(exportConfig.getFormattedConfigs());
+	  exportConfig.set("exportBulk", exportBulk);
+      const formData = _.cloneDeep(exportConfig.getFormattedConfigs({minifyResources: this.config.minifyResources || false}));
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
-
-      try {
-        const content = await ExportManager.sendToServer(this.config.url, formData);
+	  try {
+        const url = await this.getUrl();
+        const content = await ExportManager.sendToServer(url, formData, this.config.isSecure);
         const zipFile = ExportManager.saveZip(content);
         const files = ExportManager.saveExportedFiles(zipFile, dirPath, unzip);
         resolve(files);
@@ -40,9 +61,9 @@ class ExportManager extends EventEmitter {
       if (formData.payload) {
         formData.payload = fs.createReadStream(formData.payload);
       }
-
       try {
-        const content = await ExportManager.sendToServer(this.config.url, formData);
+        const url = await this.getUrl();
+        const content = await ExportManager.sendToServer(url, formData, this.config.isSecure);
         const streams = ExportManager.unzipAsStream(content);
         resolve(streams);
       } catch (error) {
@@ -51,17 +72,18 @@ class ExportManager extends EventEmitter {
     });
   }
 
-  static async sendToServer(serverUrl, formData) {
+  static async sendToServer(serverUrl, formData, isSecure) {
     return new Promise(async (resolve, reject) => {
       const form = new FormData();
       Object.keys(formData).forEach(key => {
         form.append(key, formData[key]);
       });
-
-      fetch(serverUrl, {
+      const options = {
         method: "POST",
         body: form,
-      })
+      };
+      if(isSecure) options.agent = agent;
+      fetch(serverUrl, options)
         .then(async res => {
           if (res.status === 500) {
             const { error = "" } = await res.json();
@@ -115,7 +137,7 @@ class ExportManager extends EventEmitter {
     return zipFile.name;
   }
 
-  static saveExportedFiles(exportedFile, dirPath = ".", unzip = false) {
+  static saveExportedFiles(exportedFile, dirPath = ".", unzip = true) {
     if (!exportedFile) {
       throw new Error("Exported files are missing");
     }

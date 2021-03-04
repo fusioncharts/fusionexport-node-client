@@ -1,0 +1,101 @@
+[{
+    "type": "column2d",
+    "renderAt": "column_chart",
+    "width": "550",
+    "height": "350",
+    "dataFormat": "json",
+    "dataSource": {
+        "chart": {
+            "caption": "Number of visitors in the last 3 days",
+            "subCaption": "Bakersfield Central vs Los Angeles Topanga",
+            "theme": "fusion"
+        },
+        "data": [{
+            "label": "Mon",
+            "value": "15123"
+        }, {
+            "label": "Tue",
+            "value": "14233"
+        }, {
+            "label": "Wed",
+            "value": "25507"
+        }]
+    }
+}, {
+    "type": "pie2d",
+    "renderAt": "pie_chart",
+    "width": "550",
+    "height": "350",
+    "dataFormat": "json",
+    "dataSource": {
+        "chart": {
+            "caption": "Split of revenue by product categories",
+            "subCaption": "Last year",
+            "numberPrefix": "$",
+            "showPercentInTooltip": "0",
+            "decimals": "1",
+            "useDataPlotColorForLabels": "1",
+            "theme": "fusion"
+        },
+        "data": [{
+            "label": "Food",
+            "value": "285040"
+        }, {
+            "label": "Apparels",
+            "value": "146330"
+        }, {
+            "label": "Electronics",
+            "value": "105070"
+        }, {
+            "label": "Household",
+            "value": "49100"
+        }]
+    }
+}, {
+    "type": "line",
+    "renderAt": "line_chart",
+    "width": "550",
+    "height": "350",
+    "dataFormat": "json",
+    "dataSource": {
+        "chart": {
+            "theme": "fusion",
+            "caption": "Total footfall in Bakersfield Central",
+            "subCaption": "Last week",
+            "xAxisName": "Day",
+            "yAxisName": "No. of Visitors",
+            "lineThickness": "2"
+        },
+        "data": [{
+            "label": "Mon",
+            "value": "15123"
+        }, {
+            "label": "Tue",
+            "value": "14233"
+        }, {
+            "label": "Wed",
+            "value": "23507"
+        }, {
+            "label": "Thu",
+            "value": "9110"
+        }, {
+            "label": "Fri",
+            "value": "15529"
+        }, {
+            "label": "Sat",
+            "value": "20803"
+        }, {
+            "label": "Sun",
+            "value": "19202"
+        }],
+        "trendlines": [{
+            "line": [{
+                "startvalue": "18500",
+                "color": "#29C3BE",
+                "displayvalue": "Average{br}weekly{br}footfall",
+                "valueOnRight": "1",
+                "thickness": "2"
+            }]
+        }]
+    }
+}]

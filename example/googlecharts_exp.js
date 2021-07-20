@@ -9,7 +9,7 @@ const { ExportManager, ExportConfig } = require("../");
 const exportManager = new ExportManager();
 
 // Instantiate ExportConfig and add the required configurations
-const exportConfig = new ExportConfig();
+const exportConfig = new ExportConfig({minifyResources:true});
 
 exportConfig.set("templateFilePath", path.join(__dirname, "resources", "template_googlecharts.html"));
 exportConfig.set("type", "jpg");

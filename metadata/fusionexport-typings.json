@@ -12,6 +12,16 @@
   "templateFilePath": {
     "supportedTypes": ["string"]
   },
+  "exportBulk": {
+    "supportedTypes": ["string", "number", "boolean"],
+    "converter": "BooleanConverter"
+  },
+  "header": {
+    "supportedTypes": ["string"]
+  },
+  "subheader": {
+    "supportedTypes": ["string"]
+  },
   "templateWidth": {
     "supportedTypes": ["string", "number"],
     "converter": "NumberConverter"
@@ -89,5 +99,12 @@
   },
   "resourceFilePath": {
     "supportedTypes": ["string"]
+  },
+  "fontDirPath":{
+    "type": "object"
+  },
+  "minifyResources": {
+    "supportedTypes": ["string", "boolean"],
+    "converter": "BooleanToStringConverter"
   }
 }
